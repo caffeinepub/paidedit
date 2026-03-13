@@ -179,8 +179,8 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow" />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/30 bg-white/10 text-white text-sm font-medium mb-8">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               Starting from just ₹49 per video
             </div>
 
