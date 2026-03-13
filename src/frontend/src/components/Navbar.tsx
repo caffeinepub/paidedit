@@ -2,7 +2,9 @@ import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Loader2, LogIn, LogOut, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { backendInterface as FullBackend } from "../backend.d";
+import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useIsAdmin } from "../hooks/useQueries";
 
@@ -11,8 +13,53 @@ export default function Navbar() {
     useInternetIdentity();
   const queryClient = useQueryClient();
   const { data: isAdmin } = useIsAdmin();
+  const { actor } = useActor();
   const isAuthenticated = !!identity;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+
+  // Check premium status: only show diamond if admin verified payment for a premium plan
+  useEffect(() => {
+    if (!actor || !isAuthenticated) {
+      setIsPremium(false);
+      return;
+    }
+    (async () => {
+      try {
+        const orders = await actor.getMyOrders();
+        if (orders.length === 0) {
+          setIsPremium(false);
+          return;
+        }
+        const approvalChecks = await Promise.all(
+          orders
+            .filter((o: any) => [149, 499, 999].includes(Number(o.price)))
+            .map(async (o: any) => {
+              try {
+                return await (
+                  actor as unknown as FullBackend
+                ).isPaymentApproved(o.id);
+              } catch {
+                return false;
+              }
+            }),
+        );
+        const hasPremiumApproved =
+          approvalChecks.some(Boolean) &&
+          orders.some((o: any) => [149, 499, 999].includes(Number(o.price)));
+        setIsPremium(hasPremiumApproved);
+        if (hasPremiumApproved) {
+          localStorage.setItem("paidedit_premium_plan", "true");
+        } else {
+          localStorage.removeItem("paidedit_premium_plan");
+        }
+      } catch {
+        // fallback to localStorage
+        const plan = localStorage.getItem("paidedit_premium_plan");
+        setIsPremium(!!plan);
+      }
+    })();
+  }, [actor, isAuthenticated]);
 
   const handleAuth = async () => {
     if (isAuthenticated) {
@@ -48,6 +95,15 @@ export default function Navbar() {
             <span className="gradient-text">PAID</span>
             <span className="text-foreground">EDIT</span>
           </span>
+          {isPremium && (
+            <span
+              className="text-base leading-none"
+              title="Premium Member"
+              style={{ filter: "drop-shadow(0 0 6px #a855f7)" }}
+            >
+              💎
+            </span>
+          )}
         </Link>
 
         {/* Desktop Nav */}
@@ -100,6 +156,15 @@ export default function Navbar() {
 
         {/* Auth Button */}
         <div className="hidden md:flex items-center gap-3">
+          {isPremium && (
+            <span
+              className="text-xl"
+              title="Premium Member"
+              style={{ filter: "drop-shadow(0 0 8px #a855f7)" }}
+            >
+              💎
+            </span>
+          )}
           {loginStatus === "initializing" ? (
             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
           ) : (

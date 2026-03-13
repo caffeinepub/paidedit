@@ -8,11 +8,15 @@ import {
   IndianRupee,
   Loader2,
   LogIn,
+  MessageCircle,
   PackageOpen,
   Video,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { useEffect, useState } from "react";
+import type { backendInterface as FullBackend } from "../backend.d";
 import StatusBadge from "../components/StatusBadge";
+import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useGetMyOrders } from "../hooks/useQueries";
 
@@ -29,6 +33,35 @@ export default function Orders() {
   const { identity, login, isLoggingIn } = useInternetIdentity();
   const isAuthenticated = !!identity;
   const { data: orders, isLoading, isError } = useGetMyOrders();
+  const { actor } = useActor();
+  const [approvedOrders, setApprovedOrders] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!orders || !actor || !isAuthenticated) return;
+    const loadApprovals = async () => {
+      try {
+        const results = await Promise.all(
+          orders.map(async (order) => {
+            try {
+              const approved = await (
+                actor as unknown as FullBackend
+              ).isPaymentApproved(order.id);
+              return { id: order.id.toString(), approved };
+            } catch {
+              return { id: order.id.toString(), approved: false };
+            }
+          }),
+        );
+        const approvedSet = new Set(
+          results.filter((r) => r.approved).map((r) => r.id),
+        );
+        setApprovedOrders(approvedSet);
+      } catch {
+        // silent
+      }
+    };
+    loadApprovals();
+  }, [orders, actor, isAuthenticated]);
 
   if (!isAuthenticated) {
     return (
@@ -41,22 +74,51 @@ export default function Orders() {
             <h2 className="font-display font-bold text-2xl mb-3">
               Login Required
             </h2>
-            <p className="text-muted-foreground text-sm mb-8">
+            <p className="text-muted-foreground text-sm mb-4">
               Please log in to view your order history.
             </p>
-            <Button
+            <div className="flex items-center justify-center gap-2 text-xs text-green-600 bg-green-50 border border-green-200 rounded-lg px-4 py-2 mb-6 font-bold">
+              <span>🔒</span>
+              <span>Aapka data private aur secure hai</span>
+            </div>
+            <button
               onClick={login}
               disabled={isLoggingIn}
-              className="w-full gradient-primary border-0 text-white font-semibold h-12 hover:opacity-90"
+              type="button"
+              className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 font-semibold h-12 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-60"
               data-ocid="orders.primary_button"
             >
               {isLoggingIn ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
               ) : (
-                <LogIn className="w-4 h-4 mr-2" />
+                <svg
+                  className="w-5 h-5"
+                  viewBox="0 0 48 48"
+                  role="img"
+                  aria-label="Google"
+                >
+                  <title>Google</title>
+                  <path
+                    fill="#EA4335"
+                    d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                  />
+                  <path fill="none" d="M0 0h48v48H0z" />
+                </svg>
               )}
-              Login to View Orders
-            </Button>
+              Sign in with Google
+            </button>
           </CardContent>
         </Card>
       </div>
@@ -177,10 +239,21 @@ export default function Orders() {
                           </p>
                           <StatusBadge status={order.status} />
                         </div>
+                        <div className="mb-1.5">
+                          {approvedOrders.has(order.id.toString()) ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/30">
+                              💰 Payment Verified ✅
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">
+                              ⏳ Payment Pending Verification
+                            </span>
+                          )}
+                        </div>
                         <p className="text-muted-foreground text-xs line-clamp-2 mb-2">
                           {order.description}
                         </p>
-                        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mb-3">
                           <span className="flex items-center gap-1">
                             <CalendarDays className="w-3 h-3" />
                             {formatDate(order.createdAt)}
@@ -190,6 +263,26 @@ export default function Orders() {
                             {Number(order.price)} — Order #{order.id.toString()}
                           </span>
                         </div>
+                        {/* Premium WhatsApp send button */}
+                        {[149, 499, 999].includes(Number(order.price)) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const msg = encodeURIComponent(
+                                `Hello PAIDEDIT! [PREMIUM - FREE VIDEO] My Customer ID: ${order.id.toString()}. Plan: ${order.description}. Sending my video now.`,
+                              );
+                              window.open(
+                                `https://wa.me/919817056622?text=${msg}`,
+                                "_blank",
+                              );
+                            }}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:opacity-90 transition-opacity shadow-md"
+                            data-ocid="orders.whatsapp.primary_button"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />💎 Send
+                            Video on WhatsApp (FREE)
+                          </button>
+                        )}
                       </div>
                     </div>
                   </CardContent>

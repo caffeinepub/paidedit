@@ -1,89 +1,95 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  AlertCircle,
+  AlertTriangle,
   CheckCircle2,
+  Clock,
   Copy,
-  FileVideo,
   IndianRupee,
   Loader2,
-  LogIn,
-  RefreshCw,
+  MessageCircle,
   Smartphone,
-  Upload,
   Video,
-  WifiOff,
-  X,
+  XCircle,
 } from "lucide-react";
-import { motion } from "motion/react";
-import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  MAX_FILE_SIZE_BYTES,
-  MAX_FILE_SIZE_MB,
-  useFileUpload,
-} from "../hooks/useFileUpload";
+import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useSubmitOrder } from "../hooks/useQueries";
 
 const UPI_ID = "s79576@ptyes";
-const MAX_RETRIES = 3;
+const DAILY_UPLOAD_LIMIT = 10;
+const PLAN_7_DAILY_LIMIT = 3;
+const LIMITED_PLAN_IDS = [2, 5, 6, 7];
+const PREMIUM_PLAN_IDS = [5, 6, 7];
+
+const STEP_LABELS = [
+  "Select Plan",
+  "Your Details",
+  "Send Video",
+  "Send Money",
+  "Verification",
+  "Approved!",
+];
+
+function getTodayKey() {
+  return `paidedit_upload_count_${new Date().toISOString().slice(0, 10)}`;
+}
+function getDailyUploads(): number {
+  try {
+    return Number.parseInt(localStorage.getItem(getTodayKey()) ?? "0", 10) || 0;
+  } catch {
+    return 0;
+  }
+}
+function incrementDailyUploads() {
+  try {
+    const key = getTodayKey();
+    const cur = getDailyUploads();
+    localStorage.setItem(key, String(cur + 1));
+  } catch {
+    // ignore
+  }
+}
 
 const PLANS = [
   {
     id: 0,
     name: "Free Fire Video Edit",
-    subtitle: "Gaming Highlights • ₹39",
-    price: 39,
+    subtitle: "Gaming Highlights • ₹50",
+    price: 50,
     features: ["Free Fire highlights", "Gaming effects", "Music sync"],
     highlight: false,
     fireHot: true,
   },
   {
-    id: 1,
-    name: "Instagram Reel",
-    subtitle: "15 seconds • For Instagram",
-    price: 49,
-    features: ["15-second video", "Music + Captions"],
-  },
-  {
     id: 2,
     name: "High Quality Video",
-    subtitle: "Full HD • Color Grading",
+    subtitle: "Full HD • 4 Videos • Valid 1 Day",
     price: 99,
-    features: ["Full HD quality", "Color Grading + Effects"],
-  },
-  {
-    id: 3,
-    name: "5 Minute Video",
-    subtitle: "Up to 5 minutes • Full HD",
-    price: 149,
-    features: ["Up to 5 min", "Transitions + Music"],
-  },
-  {
-    id: 4,
-    name: "1 Month Package",
-    subtitle: "Unlimited • Priority",
-    price: 149,
-    features: ["Unlimited videos", "24/7 Support"],
+    features: [
+      "4 videos per day",
+      "Full HD quality",
+      "Color Grading + Effects",
+      "Valid for 1 day",
+    ],
   },
   {
     id: 5,
-    name: "3 Month Package",
-    subtitle: "Best Deal • Save ₹148",
+    name: "Free Fire 15 Day Package",
+    subtitle: "Free Fire Only • 15 Days",
     price: 499,
-    features: ["Dedicated editor", "Priority support"],
+    features: [
+      "Free Fire edits only",
+      "2 videos per day",
+      "15 days validity",
+      "Priority support",
+    ],
     highlight: true,
   },
   {
@@ -99,6 +105,15 @@ const PLANS = [
     highlight: false,
     bestOffer: true,
   },
+  {
+    id: 7,
+    name: "15 Day Premium",
+    subtitle: "2 videos/day • Premium 15 Days",
+    price: 149,
+    features: ["2 videos per day", "Premium quality", "Diamond status"],
+    highlight: false,
+    isPremium15: true,
+  },
 ];
 
 const UPI_APPS = [
@@ -107,60 +122,48 @@ const UPI_APPS = [
     name: "Google Pay",
     shortName: "GPay",
     color: "#1A73E8",
-    bgClass: "bg-blue-600",
+    bgClass: "bg-white",
     textClass: "text-blue-600",
     borderClass: "border-blue-500/30 hover:border-blue-500/60",
     deepLink: (price: number) =>
       `gpay://upi/pay?pa=${UPI_ID}&pn=PAIDEDIT&am=${price}&cu=INR`,
-    initial: "G",
+    logo: "/assets/uploads/WhatsApp-Image-2026-03-13-at-2.49.37-PM-1--2.jpeg",
   },
   {
     id: "phonepe",
     name: "PhonePe",
     shortName: "PhonePe",
     color: "#6739B7",
-    bgClass: "bg-purple-600",
+    bgClass: "bg-white",
     textClass: "text-purple-600",
     borderClass: "border-purple-500/30 hover:border-purple-500/60",
     deepLink: (price: number) =>
       `phonepe://pay?pa=${UPI_ID}&pn=PAIDEDIT&am=${price}&cu=INR`,
-    initial: "P",
+    logo: "/assets/uploads/WhatsApp-Image-2026-03-13-at-2.49.37-PM-3.jpeg",
   },
   {
     id: "paytm",
     name: "Paytm",
     shortName: "Paytm",
-    color: "#00BAF2",
-    bgClass: "bg-sky-500",
-    textClass: "text-sky-500",
+    color: "#00B9F1",
+    bgClass: "bg-white",
+    textClass: "text-sky-600",
     borderClass: "border-sky-500/30 hover:border-sky-500/60",
     deepLink: (price: number) =>
-      `paytm://pay?pa=${UPI_ID}&pn=PAIDEDIT&am=${price}&cu=INR`,
-    initial: "T",
+      `paytmmp://pay?pa=${UPI_ID}&pn=PAIDEDIT&am=${price}&cu=INR`,
+    logo: "/assets/uploads/WhatsApp-Image-2026-03-13-at-2.49.36-PM-1.jpeg",
   },
   {
     id: "fampay",
     name: "FamPay",
     shortName: "FamPay",
-    color: "#FF6B00",
-    bgClass: "bg-orange-500",
-    textClass: "text-orange-500",
-    borderClass: "border-orange-500/30 hover:border-orange-500/60",
+    color: "#FFCD05",
+    bgClass: "bg-yellow-50",
+    textClass: "text-yellow-700",
+    borderClass: "border-yellow-400/30 hover:border-yellow-400/60",
     deepLink: (price: number) =>
-      `fampay://pay?pa=${UPI_ID}&pn=PAIDEDIT&am=${price}&cu=INR`,
-    initial: "F",
-  },
-  {
-    id: "any",
-    name: "Any UPI App",
-    shortName: "Any UPI",
-    color: "#10B981",
-    bgClass: "bg-emerald-500",
-    textClass: "text-emerald-500",
-    borderClass: "border-emerald-500/30 hover:border-emerald-500/60",
-    deepLink: (price: number) =>
-      `upi://pay?pa=${UPI_ID}&pn=PAIDEDIT&am=${price}&cu=INR&tn=Video+Editing+Order`,
-    initial: "₹",
+      `upi://pay?pa=${UPI_ID}&pn=PAIDEDIT&am=${price}&cu=INR`,
+    logo: null,
   },
 ];
 
@@ -168,50 +171,102 @@ export default function Submit() {
   const { identity, login, isLoggingIn } = useInternetIdentity();
   const isAuthenticated = !!identity;
   const navigate = useNavigate();
+  const { actor } = useActor();
+  const [customerId, setCustomerId] = useState<string | null>(null);
 
+  const [step, setStep] = useState(1);
   const [selectedPlanId, setSelectedPlanId] = useState(1);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [contactName, setContactName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [description, setDescription] = useState("");
-  const [dragOver, setDragOver] = useState(false);
+  const [mobileNumber, setMobileNumber] = useState("");
   const [upiCopied, setUpiCopied] = useState(false);
-  const [showUpiSelector, setShowUpiSelector] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [whatsappOpened, setWhatsappOpened] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [dailyUploads, setDailyUploads] = useState(getDailyUploads);
+  const [orderId, setOrderId] = useState<bigint | null>(null);
+  const recordPaymentCancelled = useCallback(() => {
+    if (!orderId) return;
+    const key = `paidedit_cancelled_${orderId.toString()}`;
+    const record = {
+      orderId: orderId.toString(),
+      customerName: contactName || "Unknown",
+      customerId: customerId || "",
+      plan:
+        (PLANS.find((p) => p.id === selectedPlanId) ?? PLANS[0])?.name || "",
+      price:
+        (PLANS.find((p) => p.id === selectedPlanId) ?? PLANS[0])?.price || 0,
+      cancelledAt: new Date().toISOString(),
+    };
+    localStorage.setItem(key, JSON.stringify(record));
+    const listKey = "paidedit_cancelled_orders";
+    const existing: string[] = JSON.parse(
+      localStorage.getItem(listKey) || "[]",
+    );
+    if (!existing.includes(orderId.toString())) {
+      existing.push(orderId.toString());
+      localStorage.setItem(listKey, JSON.stringify(existing));
+    }
+    // Also notify backend
+    if (actor) {
+      (actor as any).cancelPayment(orderId).catch(() => {});
+    }
+  }, [orderId, contactName, customerId, selectedPlanId, actor]);
+  const [_paymentApproved, setPaymentApproved] = useState(false);
+  const [orderSubmitting, setOrderSubmitting] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const {
-    uploadFile,
-    uploadProgress,
-    isUploading,
-    uploadError,
-    retryCount,
-    retryPhase,
-    retryCountdown,
-    clearUploadError,
-  } = useFileUpload();
   const submitOrder = useSubmitOrder();
 
+  // Auto-register user when actor & identity are available
+  useEffect(() => {
+    if (!actor || !identity) return;
+    (actor as any)
+      .selfRegister()
+      .then((id: string) => {
+        setCustomerId(id);
+      })
+      .catch(() => {});
+  }, [actor, identity]);
+
   const selectedPlan = PLANS.find((p) => p.id === selectedPlanId) ?? PLANS[0];
+  const isLimitedPlan = LIMITED_PLAN_IDS.includes(selectedPlanId);
+  const planDailyLimit =
+    selectedPlanId === 7 ? PLAN_7_DAILY_LIMIT : DAILY_UPLOAD_LIMIT;
+  const remainingToday = Math.max(0, planDailyLimit - dailyUploads);
+  const limitReached = isLimitedPlan && remainingToday === 0;
+  const isPremiumPlan = PREMIUM_PLAN_IDS.includes(selectedPlanId);
+  const finalPrice = Math.max(0, selectedPlan.price - promoDiscount);
 
-  const handleFileSelect = (file: File) => {
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      toast.error(
-        `File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB. Please compress your video.`,
-      );
-      return;
-    }
-    if (!file.type.startsWith("video/")) {
-      toast.error("Please select a valid video file.");
-      return;
-    }
-    setVideoFile(file);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
-  };
+  // Poll for payment approval on step 5
+  useEffect(() => {
+    if (step !== 5 || !orderId) return;
+    pollRef.current = setInterval(async () => {
+      const key = `paidedit_payment_approved_${orderId.toString()}`;
+      if (localStorage.getItem(key) === "true") {
+        setPaymentApproved(true);
+        if (pollRef.current) clearInterval(pollRef.current);
+        setStep(6);
+        return;
+      }
+      if (actor) {
+        try {
+          const approved = await (actor as any).isPaymentApproved(orderId);
+          if (approved) {
+            setPaymentApproved(true);
+            if (pollRef.current) clearInterval(pollRef.current);
+            setStep(6);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }, 3000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [step, orderId, actor]);
 
   const copyUpi = () => {
     navigator.clipboard.writeText(UPI_ID).then(() => {
@@ -222,52 +277,73 @@ export default function Submit() {
   };
 
   const handleUpiAppClick = (deepLink: string) => {
-    setShowUpiSelector(false);
     window.location.href = deepLink;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!videoFile) {
-      toast.error("Please upload a video file.");
-      return;
+  const handleApplyPromo = () => {
+    if (promoCode.trim().toUpperCase() === "PAID200") {
+      if (selectedPlan.price >= 200) {
+        setPromoDiscount(150);
+        setPromoApplied(true);
+        toast.success("Promo code applied! ₹150 off.");
+      } else {
+        toast.error("Promo code PAID200 is only valid on plans above ₹200.");
+      }
+    } else {
+      toast.error("Invalid promo code.");
     }
-    if (!contactName.trim()) {
-      toast.error("Please enter your name.");
-      return;
-    }
-    if (!contactEmail.trim()) {
-      toast.error("Please enter your email.");
-      return;
-    }
-    if (!description.trim()) {
-      toast.error("Please describe your editing requirements.");
-      return;
-    }
+  };
 
+  const handleWhatsAppSend = () => {
+    const premiumLabel = isPremiumPlan
+      ? " [PREMIUM - FREE VIDEO INCLUDED]"
+      : "";
+    const msg = encodeURIComponent(
+      `Hello PAIDEDIT!${premiumLabel} My name is ${contactName}, Customer ID: ${customerId || "pending"}. Plan: ${selectedPlan.name} - ₹${finalPrice}. I want to send my video for editing.`,
+    );
+    window.open(`https://wa.me/919817056622?text=${msg}`, "_blank");
+    setWhatsappOpened(true);
+  };
+
+  const handleVideoSent = async () => {
+    setOrderSubmitting(true);
     try {
-      const fileId = await uploadFile(videoFile);
-      await submitOrder.mutateAsync({
-        videoFileId: fileId,
-        videoFileName: videoFile.name,
-        description,
-        contactName,
-        contactEmail,
-        contactPhone: "",
-      });
-      toast.success("Order submitted successfully!");
-      navigate({ to: "/orders" });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Submission failed";
-      const isTimeout =
-        msg.toLowerCase().includes("polling") ||
-        msg.toLowerCase().includes("timeout") ||
-        msg.toLowerCase().includes("certificate");
-      toast.error(
-        isTimeout
-          ? "Network is slow — retrying automatically. Please wait a moment..."
-          : msg,
-      );
+      if (actor) {
+        try {
+          await (actor as any).selfRegister();
+        } catch {}
+      }
+      // Try to save order in backend, but always proceed to payment regardless
+      try {
+        const result = await submitOrder.mutateAsync({
+          videoFileId: "whatsapp",
+          videoFileName: `${selectedPlan.name}-video`,
+          description: `${selectedPlan.name} - ₹${finalPrice}`,
+          contactName,
+          contactEmail: `${mobileNumber}@customer.paidedit`,
+          contactPhone: mobileNumber,
+        });
+        if (result && typeof result === "object" && "id" in result) {
+          setOrderId((result as { id: bigint }).id);
+        }
+      } catch {
+        // Backend save failed silently — still proceed to payment
+      }
+      if (isLimitedPlan) {
+        incrementDailyUploads();
+        setDailyUploads(getDailyUploads());
+      }
+      if (isPremiumPlan) {
+        localStorage.setItem("paidedit_premium_plan", selectedPlan.name);
+      }
+      toast.success("Video sent! Please complete payment now.");
+      setStep(4);
+    } catch {
+      // Even if everything fails, still go to payment
+      toast.success("Video sent! Please complete payment now.");
+      setStep(4);
+    } finally {
+      setOrderSubmitting(false);
     }
   };
 
@@ -287,22 +363,47 @@ export default function Submit() {
               <h2 className="font-display font-bold text-2xl mb-3">
                 Login Required
               </h2>
-              <p className="text-muted-foreground text-sm mb-8">
+              <p className="text-muted-foreground text-sm mb-8 font-bold">
                 Please log in to submit a video for editing.
               </p>
-              <Button
+              <button
                 onClick={login}
                 disabled={isLoggingIn}
-                className="w-full gradient-primary border-0 text-white font-semibold h-12 hover:opacity-90"
+                type="button"
+                className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 font-semibold h-12 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-60"
                 data-ocid="submit.primary_button"
               >
                 {isLoggingIn ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
                 ) : (
-                  <LogIn className="w-4 h-4 mr-2" />
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 48 48"
+                    role="img"
+                    aria-label="Google"
+                  >
+                    <title>Google</title>
+                    <path
+                      fill="#EA4335"
+                      d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"
+                    />
+                    <path
+                      fill="#4285F4"
+                      d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                    />
+                    <path fill="none" d="M0 0h48v48H0z" />
+                  </svg>
                 )}
-                Login to Continue
-              </Button>
+                Sign in with Google
+              </button>
             </CardContent>
           </Card>
         </motion.div>
@@ -310,626 +411,811 @@ export default function Submit() {
     );
   }
 
-  const isSubmitting = isUploading || submitOrder.isPending;
-  const isRetrying =
-    submitOrder.isPending && !isUploading && submitOrder.failureCount > 0;
-
-  // Compute upload button label
-  let uploadButtonLabel: React.ReactNode;
-  if (isUploading) {
-    if (retryPhase === "waiting") {
-      uploadButtonLabel = `Retrying in ${retryCountdown}s…`;
-    } else if (retryPhase === "uploading" && retryCount > 0) {
-      uploadButtonLabel = `Retrying… ${uploadProgress}%`;
-    } else {
-      uploadButtonLabel = `Uploading ${uploadProgress}%`;
-    }
-  }
+  // ---- Step Indicator ----
+  const StepIndicator = () => (
+    <div className="flex items-center justify-center gap-1 mb-8 overflow-x-auto pb-1">
+      {STEP_LABELS.map((label, i) => {
+        const num = i + 1;
+        const active = step === num;
+        const done = step > num;
+        return (
+          <div key={num} className="flex items-center">
+            <div className="flex flex-col items-center gap-1">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                  done
+                    ? "bg-green-500 text-white"
+                    : active
+                      ? "gradient-primary text-white shadow-lg shadow-primary/30"
+                      : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {done ? <CheckCircle2 className="w-4 h-4" /> : num}
+              </div>
+              <span
+                className={`text-[9px] font-bold whitespace-nowrap hidden sm:block ${
+                  active
+                    ? "text-primary"
+                    : done
+                      ? "text-green-400"
+                      : "text-muted-foreground"
+                }`}
+              >
+                {label}
+              </span>
+            </div>
+            {i < STEP_LABELS.length - 1 && (
+              <div
+                className={`h-0.5 w-4 sm:w-8 mx-1 rounded-full ${
+                  done ? "bg-green-500" : "bg-muted"
+                }`}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className="min-h-[calc(100vh-4rem)] py-12">
-      <div className="container mx-auto px-4 max-w-5xl">
+      <div className="container mx-auto px-4 max-w-2xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-10"
+          className="mb-8"
         >
           <h1 className="font-display font-bold text-4xl sm:text-5xl mb-3">
             Submit Your <span className="gradient-text">Video</span>
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Fill in the details below and we&apos;ll start editing your video.
+          <p className="text-muted-foreground text-lg font-bold">
+            Follow the steps below to order your edit.
           </p>
+          {customerId && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/15 border border-violet-500/30">
+              <span className="text-[10px] font-bold text-violet-400">
+                Customer ID:
+              </span>
+              <span className="text-[11px] font-bold text-violet-200">
+                {customerId}
+              </span>
+            </div>
+          )}
         </motion.div>
 
-        {/* Plan Selection */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-8"
-        >
-          <Card className="card-glow bg-card border-border">
-            <CardHeader>
-              <CardTitle className="font-display text-xl flex items-center gap-2">
-                <IndianRupee className="w-5 h-5 text-primary" />
-                Choose a Plan
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {PLANS.map((plan) => (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    data-ocid={`submit.plan.item.${plan.id}`}
-                    onClick={() => setSelectedPlanId(plan.id)}
-                    className={`relative rounded-xl border-2 p-4 text-left cursor-pointer transition-all duration-200 ${
-                      selectedPlanId === plan.id
-                        ? "fireHot" in plan && plan.fireHot
-                          ? "border-orange-500 bg-orange-500/10 ring-1 ring-orange-500/50"
-                          : "bestOffer" in plan && plan.bestOffer
-                            ? "border-yellow-400 bg-yellow-400/10 ring-1 ring-yellow-400/50"
-                            : plan.highlight
-                              ? "border-amber-500 bg-amber-500/10"
-                              : "border-primary bg-primary/10"
-                        : "fireHot" in plan && plan.fireHot
-                          ? "border-orange-500/60 bg-orange-500/5 hover:border-orange-500/80 hover:bg-orange-500/10"
-                          : "bestOffer" in plan && plan.bestOffer
-                            ? "border-yellow-400/60 bg-yellow-400/5 hover:border-yellow-400/80 hover:bg-yellow-400/10"
-                            : "border-border bg-muted/10 hover:border-primary/40 hover:bg-muted/20"
-                    }`}
-                  >
-                    {"fireHot" in plan && plan.fireHot && (
-                      <span className="absolute -top-2.5 left-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500 text-white animate-pulse">
-                        🔥 HOT
-                      </span>
-                    )}
-                    {plan.highlight &&
-                      !("fireHot" in plan && plan.fireHot) &&
-                      !("bestOffer" in plan && plan.bestOffer) && (
-                        <span className="absolute -top-2.5 left-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-black">
-                          BEST DEAL
-                        </span>
-                      )}
-                    {"bestOffer" in plan && plan.bestOffer && (
-                      <span className="absolute -top-2.5 left-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400 text-black animate-pulse">
-                        🏆 BEST OFFER
-                      </span>
-                    )}
-                    {selectedPlanId === plan.id && (
-                      <span className="absolute top-3 right-3">
-                        <CheckCircle2
-                          className={`w-4 h-4 ${
-                            "bestOffer" in plan && plan.bestOffer
-                              ? "text-yellow-400"
-                              : plan.highlight
-                                ? "text-amber-400"
-                                : "text-primary"
-                          }`}
-                        />
-                      </span>
-                    )}
-                    <div className="flex items-end gap-1 mb-2">
-                      <IndianRupee
-                        className={`w-4 h-4 mb-0.5 ${
-                          selectedPlanId === plan.id
-                            ? "fireHot" in plan && plan.fireHot
-                              ? "text-orange-400"
-                              : "bestOffer" in plan && plan.bestOffer
-                                ? "text-yellow-400"
-                                : plan.highlight
-                                  ? "text-amber-400"
-                                  : "text-primary"
-                            : "fireHot" in plan && plan.fireHot
-                              ? "text-orange-400/70"
-                              : "bestOffer" in plan && plan.bestOffer
-                                ? "text-yellow-400/70"
-                                : "text-muted-foreground"
-                        }`}
-                      />
-                      <span
-                        className={`font-display font-extrabold text-2xl leading-none ${
-                          selectedPlanId === plan.id
-                            ? "fireHot" in plan && plan.fireHot
-                              ? "text-orange-400"
-                              : "bestOffer" in plan && plan.bestOffer
-                                ? "text-yellow-300"
-                                : plan.highlight
-                                  ? "text-amber-300"
-                                  : "text-primary"
-                            : "fireHot" in plan && plan.fireHot
-                              ? "text-orange-400/80"
-                              : "bestOffer" in plan && plan.bestOffer
-                                ? "text-yellow-300/80"
-                                : "text-foreground"
-                        }`}
-                      >
-                        {plan.price}
-                      </span>
-                    </div>
-                    <p className="font-semibold text-sm mb-1">{plan.name}</p>
-                    <p className="text-muted-foreground text-xs mb-2">
-                      {plan.subtitle}
-                    </p>
-                    <ul className="space-y-1">
-                      {plan.features.map((feat) => (
-                        <li
-                          key={feat}
-                          className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                        >
-                          <CheckCircle2 className="w-3 h-3 text-accent shrink-0" />
-                          {feat}
-                        </li>
-                      ))}
-                    </ul>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+        <StepIndicator />
 
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left column */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Video Upload */}
+        <AnimatePresence mode="wait">
+          {/* ── STEP 1: SELECT PLAN ── */}
+          {step === 1 && (
+            <motion.div
+              key="step1"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.3 }}
+            >
               <Card className="card-glow bg-card border-border">
                 <CardHeader>
                   <CardTitle className="font-display text-xl flex items-center gap-2">
-                    <FileVideo className="w-5 h-5 text-primary" />
-                    Upload Video
+                    <IndianRupee className="w-5 h-5 text-primary" />
+                    Choose a Plan
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {!videoFile ? (
-                    <button
-                      type="button"
-                      className={`w-full relative border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-200 ${
-                        dragOver
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:border-primary/50 hover:bg-card/80"
-                      }`}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setDragOver(true);
-                      }}
-                      onDragLeave={() => setDragOver(false)}
-                      onDrop={handleDrop}
-                      onClick={() =>
-                        document.getElementById("video-input")?.click()
-                      }
-                      data-ocid="submit.dropzone"
-                    >
-                      <input
-                        id="video-input"
-                        type="file"
-                        accept="video/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f) handleFileSelect(f);
-                        }}
-                        data-ocid="submit.upload_button"
-                      />
-                      <div className="w-14 h-14 rounded-2xl bg-primary/10 mx-auto flex items-center justify-center mb-4">
-                        <Upload className="w-7 h-7 text-primary" />
-                      </div>
-                      <p className="font-semibold text-base mb-1">
-                        Drag &amp; drop your video here
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                    {PLANS.map((plan) => {
+                      const isPrem = PREMIUM_PLAN_IDS.includes(plan.id);
+                      return (
+                        <button
+                          key={plan.id}
+                          type="button"
+                          data-ocid={`submit.plan.item.${plan.id}`}
+                          onClick={() => setSelectedPlanId(plan.id)}
+                          className={`relative rounded-xl border-2 p-4 text-left cursor-pointer transition-all duration-200 ${
+                            selectedPlanId === plan.id
+                              ? "fireHot" in plan && plan.fireHot
+                                ? "border-orange-500 bg-orange-500/10 ring-1 ring-orange-500/50"
+                                : "bestOffer" in plan && plan.bestOffer
+                                  ? "border-yellow-400 bg-yellow-400/10 ring-1 ring-yellow-400/50"
+                                  : plan.highlight
+                                    ? "border-amber-500 bg-amber-500/10"
+                                    : "border-primary bg-primary/10"
+                              : "fireHot" in plan && plan.fireHot
+                                ? "border-orange-500/60 bg-orange-500/5 hover:border-orange-500/80"
+                                : "bestOffer" in plan && plan.bestOffer
+                                  ? "border-yellow-400/60 bg-yellow-400/5 hover:border-yellow-400/80"
+                                  : "border-border bg-muted/10 hover:border-primary/40"
+                          }`}
+                        >
+                          {"fireHot" in plan && plan.fireHot && (
+                            <span className="absolute -top-2.5 left-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-500 text-white animate-pulse">
+                              🔥 HOT
+                            </span>
+                          )}
+                          {plan.highlight &&
+                            !("fireHot" in plan && plan.fireHot) &&
+                            !("bestOffer" in plan && plan.bestOffer) && (
+                              <span className="absolute -top-2.5 left-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-black">
+                                BEST DEAL
+                              </span>
+                            )}
+                          {"bestOffer" in plan && plan.bestOffer && (
+                            <span className="absolute -top-2.5 left-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-400 text-black animate-pulse">
+                              🏆 BEST OFFER
+                            </span>
+                          )}
+                          {isPrem && (
+                            <span className="absolute -top-2.5 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-600 text-white flex items-center gap-0.5">
+                              💎 PREMIUM
+                            </span>
+                          )}
+                          {selectedPlanId === plan.id && (
+                            <span className="absolute top-3 right-3">
+                              <CheckCircle2
+                                className={`w-4 h-4 ${
+                                  isPrem
+                                    ? "text-purple-400"
+                                    : "bestOffer" in plan && plan.bestOffer
+                                      ? "text-yellow-400"
+                                      : plan.highlight
+                                        ? "text-amber-400"
+                                        : "text-primary"
+                                }`}
+                              />
+                            </span>
+                          )}
+                          <div className="flex items-end gap-1 mb-2">
+                            <IndianRupee
+                              className={`w-4 h-4 mb-0.5 ${
+                                selectedPlanId === plan.id
+                                  ? isPrem
+                                    ? "text-purple-400"
+                                    : "fireHot" in plan && plan.fireHot
+                                      ? "text-orange-400"
+                                      : "bestOffer" in plan && plan.bestOffer
+                                        ? "text-yellow-400"
+                                        : plan.highlight
+                                          ? "text-amber-400"
+                                          : "text-primary"
+                                  : "text-muted-foreground"
+                              }`}
+                            />
+                            <span
+                              className={`font-display font-extrabold text-2xl leading-none ${
+                                selectedPlanId === plan.id
+                                  ? isPrem
+                                    ? "text-purple-300"
+                                    : "fireHot" in plan && plan.fireHot
+                                      ? "text-orange-400"
+                                      : "bestOffer" in plan && plan.bestOffer
+                                        ? "text-yellow-300"
+                                        : plan.highlight
+                                          ? "text-amber-300"
+                                          : "text-primary"
+                                  : "text-foreground"
+                              }`}
+                            >
+                              {plan.price}
+                            </span>
+                          </div>
+                          <p className="font-bold text-sm mb-1">{plan.name}</p>
+                          <p className="text-muted-foreground text-xs mb-2 font-semibold">
+                            {plan.subtitle}
+                          </p>
+                          <ul className="space-y-1">
+                            {plan.features.map((feat) => (
+                              <li
+                                key={feat}
+                                className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold"
+                              >
+                                <CheckCircle2 className="w-3 h-3 text-accent shrink-0" />
+                                {feat}
+                              </li>
+                            ))}
+                          </ul>
+                          {LIMITED_PLAN_IDS.includes(plan.id) && (
+                            <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded-lg px-2 py-1">
+                              <AlertTriangle className="w-3 h-3 shrink-0" />
+                              Max{" "}
+                              {plan.id === 2
+                                ? 4
+                                : plan.id === 7
+                                  ? 2
+                                  : plan.id === 5
+                                    ? 2
+                                    : 2}{" "}
+                              videos/day
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {isLimitedPlan && limitReached && (
+                    <div className="mb-4 rounded-xl border-2 border-red-500 bg-red-500/10 p-4 flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                      <p className="text-sm font-bold text-red-400">
+                        Daily limit reached ({planDailyLimit}/{planDailyLimit}).
+                        Come back tomorrow.
                       </p>
-                      <p className="text-muted-foreground text-sm">
-                        Or click to browse — MP4, MOV, AVI, etc.
-                      </p>
-                    </button>
-                  ) : (
-                    <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Video className="w-5 h-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {videoFile.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setVideoFile(null)}
-                        className="p-1 hover:bg-destructive/10 rounded-md transition-colors text-muted-foreground hover:text-destructive"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
                     </div>
                   )}
 
-                  {isUploading && (
-                    <div className="mt-4" data-ocid="submit.loading_state">
-                      <div className="flex justify-between text-xs mb-2">
-                        {retryPhase === "waiting" ? (
-                          <span className="text-amber-400 font-medium flex items-center gap-1">
-                            <WifiOff className="w-3 h-3" />
-                            Checking connection… retrying in {retryCountdown}s
-                          </span>
-                        ) : retryPhase === "uploading" && retryCount > 0 ? (
-                          <span className="text-amber-400 font-medium flex items-center gap-1">
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            Retrying upload… ({retryCount}/{MAX_RETRIES})
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            Uploading…
-                          </span>
-                        )}
-                        <span className="text-muted-foreground">
-                          {retryPhase === "waiting" ? "0" : uploadProgress}%
-                        </span>
-                      </div>
-                      <Progress
-                        value={retryPhase === "waiting" ? 0 : uploadProgress}
-                        className={`h-2 ${
-                          retryPhase !== "idle" && retryCount > 0
-                            ? "[&>div]:bg-amber-400"
-                            : ""
-                        }`}
-                      />
-                      {retryPhase === "waiting" && (
-                        <p className="text-[10px] text-amber-400/70 mt-1 flex items-center gap-1">
-                          <WifiOff className="w-2.5 h-2.5" />
-                          Network error detected — checking your connection…
-                        </p>
-                      )}
-                      {retryPhase === "uploading" && retryCount > 0 && (
-                        <p className="text-[10px] text-amber-400/70 mt-1">
-                          Network error detected — automatically retrying your
-                          upload…
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {uploadError && (
-                    <div
-                      className="mt-3 p-3 rounded-lg bg-destructive/10 border border-destructive/30"
-                      data-ocid="submit.error_state"
-                    >
-                      {/* Internet connection warning */}
-                      <div className="flex items-center gap-2 mb-2.5 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                        <WifiOff className="w-4 h-4 text-amber-400 shrink-0" />
-                        <p className="text-xs font-semibold text-amber-300">
-                          Please check your internet connection and try again.
-                        </p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-destructive mb-0.5">
-                            Upload Failed
-                          </p>
-                          <p className="text-xs text-destructive/80">
-                            {uploadError.includes("v3 response") ||
-                            uploadError.includes("Expected v3")
-                              ? "Network error: Please check your internet connection and try again."
-                              : uploadError}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          clearUploadError();
-                          setVideoFile(null);
-                        }}
-                        className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-destructive hover:text-white bg-destructive/10 hover:bg-destructive/30 rounded-lg py-2 transition-colors"
-                        data-ocid="submit.secondary_button"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        Try Again
-                      </button>
-                    </div>
-                  )}
+                  <Button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    disabled={limitReached}
+                    className="w-full gradient-primary border-0 text-white font-bold h-12 hover:opacity-90 transition-opacity"
+                    data-ocid="submit.primary_button"
+                  >
+                    Continue — {selectedPlan.name} ₹{selectedPlan.price}
+                    {isPremiumPlan && " 💎"}
+                  </Button>
                 </CardContent>
               </Card>
+            </motion.div>
+          )}
 
-              {/* Contact Info */}
+          {/* ── STEP 2: YOUR DETAILS ── */}
+          {step === 2 && (
+            <motion.div
+              key="step2"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.3 }}
+            >
               <Card className="card-glow bg-card border-border">
                 <CardHeader>
-                  <CardTitle className="font-display text-xl">
-                    Contact Details
+                  <CardTitle className="font-display text-xl flex items-center gap-2">
+                    <Smartphone className="w-5 h-5 text-primary" />
+                    Your Details
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label
-                      htmlFor="name"
-                      className="text-sm font-medium mb-1.5 block"
-                    >
-                      Full Name
-                    </Label>
+                <CardContent className="space-y-5">
+                  <div className="space-y-2">
+                    <Label className="font-bold text-sm">Your Name *</Label>
                     <Input
-                      id="name"
-                      placeholder="Rahul Kumar"
+                      placeholder="Enter your full name"
                       value={contactName}
                       onChange={(e) => setContactName(e.target.value)}
-                      required
-                      className="bg-input border-border"
-                      data-ocid="submit.input"
+                      className="h-12 font-semibold"
+                      data-ocid="submit.name_input"
                     />
                   </div>
-                  <div>
-                    <Label
-                      htmlFor="email"
-                      className="text-sm font-medium mb-1.5 block"
-                    >
-                      Email Address
-                    </Label>
+                  <div className="space-y-2">
+                    <Label className="font-bold text-sm">Mobile Number *</Label>
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="rahul@example.com"
-                      value={contactEmail}
-                      onChange={(e) => setContactEmail(e.target.value)}
-                      required
-                      className="bg-input border-border"
-                      data-ocid="submit.input"
+                      placeholder="Enter your mobile number"
+                      value={mobileNumber}
+                      onChange={(e) => setMobileNumber(e.target.value)}
+                      type="tel"
+                      className="h-12 font-semibold"
+                      data-ocid="submit.mobile_input"
                     />
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setStep(1)}
+                      className="flex-1 h-12 font-bold"
+                      data-ocid="submit.cancel_button"
+                    >
+                      ← Back
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => setStep(3)}
+                      disabled={!contactName.trim() || !mobileNumber.trim()}
+                      className="flex-[2] gradient-primary border-0 text-white font-bold h-12 hover:opacity-90 transition-opacity"
+                      data-ocid="submit.primary_button"
+                    >
+                      Continue →
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
+            </motion.div>
+          )}
 
-              {/* Editing Requirements */}
+          {/* ── STEP 3: SEND VIDEO ON WHATSAPP ── */}
+          {step === 3 && (
+            <motion.div
+              key="step3"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.3 }}
+            >
               <Card className="card-glow bg-card border-border">
                 <CardHeader>
-                  <CardTitle className="font-display text-xl">
-                    Editing Requirements
+                  <CardTitle className="font-display text-xl flex items-center gap-2">
+                    <span className="text-2xl">📱</span>
+                    Send Your Video
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <Label
-                    htmlFor="description"
-                    className="text-sm font-medium mb-1.5 block"
+                <CardContent className="space-y-6">
+                  {customerId && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/30">
+                      <span className="text-xs font-bold text-violet-400">
+                        Customer ID:
+                      </span>
+                      <span className="text-sm font-bold text-violet-200">
+                        {customerId}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl bg-green-500/10 border-2 border-green-500/30 p-6 text-center space-y-4">
+                    <div className="w-16 h-16 rounded-2xl bg-green-500 mx-auto flex items-center justify-center">
+                      <span className="text-3xl">💬</span>
+                    </div>
+                    <p className="font-bold text-base">
+                      Send your video to our WhatsApp business account
+                    </p>
+                    <p className="text-muted-foreground text-sm font-semibold">
+                      Click the button below — your video will be sent directly
+                      to our team for editing.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleWhatsAppSend}
+                      className="w-full flex items-center justify-center gap-3 bg-green-500 hover:bg-green-600 text-white font-bold h-14 rounded-xl text-base transition-colors shadow-lg shadow-green-500/30"
+                      data-ocid="submit.primary_button"
+                    >
+                      <span className="text-2xl">📲</span>
+                      Open WhatsApp & Send Video
+                    </button>
+                  </div>
+
+                  {whatsappOpened && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-3"
+                    >
+                      <div className="rounded-xl bg-blue-500/10 border border-blue-500/30 p-4 text-center">
+                        <p className="text-sm font-bold text-blue-300">
+                          ✅ After sending the video on WhatsApp, click below:
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleVideoSent}
+                        disabled={orderSubmitting || submitOrder.isPending}
+                        className="w-full gradient-primary border-0 text-white font-bold h-12 hover:opacity-90 transition-opacity"
+                        data-ocid="submit.confirm_button"
+                      >
+                        {orderSubmitting || submitOrder.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />{" "}
+                            Submitting Order...
+                          </>
+                        ) : (
+                          "✅ I have sent the video"
+                        )}
+                      </Button>
+                    </motion.div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(2)}
+                    className="w-full h-12 font-bold"
+                    data-ocid="submit.cancel_button"
                   >
-                    Describe what you want
-                  </Label>
-                  <Textarea
-                    id="description"
-                    placeholder="e.g. Add background music, cut the first 10 seconds, add text overlay with brand name..."
-                    rows={5}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    required
-                    className="bg-input border-border resize-none"
-                    data-ocid="submit.textarea"
-                  />
+                    ← Back
+                  </Button>
                 </CardContent>
               </Card>
-            </div>
+            </motion.div>
+          )}
 
-            {/* Right column – order summary */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-24 space-y-4">
-                {/* Order Summary */}
-                <Card className="card-glow bg-card border-primary/30 overflow-hidden">
-                  <div className="h-1 gradient-primary" />
-                  <CardHeader>
-                    <CardTitle className="font-display text-xl">
-                      Order Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex justify-between items-center py-3 border-b border-border">
-                      <span className="text-sm text-muted-foreground">
-                        {selectedPlan.name}
-                      </span>
-                      <div className="flex items-center gap-1 text-foreground font-semibold">
-                        <IndianRupee className="w-4 h-4" />
-                        {selectedPlan.price}
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-semibold">Total</span>
-                      <div className="flex items-center gap-1 font-bold text-2xl gradient-text">
-                        <IndianRupee className="w-5 h-5 text-primary" />
-                        {selectedPlan.price}
-                      </div>
-                    </div>
-
-                    {videoFile && (
-                      <div className="rounded-lg bg-muted/20 p-3 text-xs text-muted-foreground">
-                        <p className="font-medium text-foreground mb-1 truncate">
-                          {videoFile.name}
-                        </p>
-                        <p>{(videoFile.size / (1024 * 1024)).toFixed(1)} MB</p>
-                      </div>
-                    )}
-
-                    {isRetrying && (
-                      <div
-                        className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30"
-                        data-ocid="submit.loading_state"
-                      >
-                        <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin shrink-0" />
-                        <p className="text-xs text-amber-300">
-                          Network slow — retrying ({submitOrder.failureCount}
-                          /3)…
-                        </p>
-                      </div>
-                    )}
-
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting || !videoFile}
-                      className="w-full gradient-primary border-0 text-white font-semibold h-12 hover:opacity-90 transition-opacity disabled:opacity-50"
-                      data-ocid="submit.submit_button"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          {isUploading
-                            ? uploadButtonLabel
-                            : isRetrying
-                              ? "Processing... (may take a moment)"
-                              : "Submitting…"}
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-4 h-4 mr-2" />
-                          Place Order — ₹{selectedPlan.price}
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* UPI Payment Card */}
-                <Card className="card-glow bg-card border-green-500/30 overflow-hidden">
-                  <div className="h-1 bg-gradient-to-r from-green-500 to-emerald-400" />
-                  <CardHeader className="pb-3">
-                    <CardTitle className="font-display text-lg flex items-center gap-2">
-                      <Smartphone className="w-5 h-5 text-green-400" />
-                      Pay via UPI
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-xs text-muted-foreground">
-                      After submitting your order, pay ₹{selectedPlan.price} via
-                      any UPI app (GPay, PhonePe, Paytm, FamPay, etc.).
+          {/* ── STEP 4: SEND MONEY (UPI PAYMENT) ── */}
+          {step === 4 && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="card-glow bg-card border-border">
+                <CardHeader>
+                  <CardTitle className="font-display text-xl flex items-center gap-2">
+                    <IndianRupee className="w-5 h-5 text-primary" />
+                    Complete Payment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Amount */}
+                  <div className="rounded-2xl bg-primary/10 border-2 border-primary/30 p-5 text-center">
+                    <p className="text-sm font-bold text-muted-foreground mb-1">
+                      Amount to Pay
                     </p>
+                    <p className="font-display font-extrabold text-5xl text-primary">
+                      ₹{finalPrice}
+                    </p>
+                    {promoApplied && (
+                      <p className="text-xs font-bold text-green-400 mt-1">
+                        🎉 PAID200 applied — ₹150 off!
+                      </p>
+                    )}
+                  </div>
 
-                    {/* UPI ID box */}
-                    <div className="flex items-center gap-2 bg-muted/30 border border-green-500/20 rounded-xl px-3 py-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-muted-foreground mb-0.5 uppercase tracking-wide">
-                          UPI ID
-                        </p>
-                        <p className="font-mono font-semibold text-sm text-green-300 truncate">
-                          {UPI_ID}
-                        </p>
-                      </div>
+                  {/* Promo code */}
+                  {!promoApplied && (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Promo code (e.g. PAID200)"
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value)}
+                        className="h-10 font-semibold"
+                        data-ocid="submit.promo_input"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleApplyPromo}
+                        className="font-bold whitespace-nowrap"
+                        data-ocid="submit.promo_button"
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* UPI ID */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      UPI ID
+                    </p>
+                    <div className="flex items-center gap-3 rounded-xl bg-muted/30 border border-border p-3">
+                      <span className="flex-1 font-bold text-sm font-mono">
+                        {UPI_ID}
+                      </span>
                       <button
                         type="button"
                         onClick={copyUpi}
-                        className="shrink-0 p-2 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-400 transition-colors"
-                        title="Copy UPI ID"
-                        data-ocid="submit.secondary_button"
+                        className="flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
+                        data-ocid="submit.copy_button"
                       >
-                        {upiCopied ? (
-                          <CheckCircle2 className="w-4 h-4" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
+                        <Copy className="w-3.5 h-3.5" />
+                        {upiCopied ? "Copied!" : "Copy"}
                       </button>
                     </div>
+                  </div>
 
-                    {/* Open UPI App button */}
-                    <Button
-                      type="button"
-                      onClick={() => setShowUpiSelector(true)}
-                      className="flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-gradient-to-r from-green-600 to-emerald-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity border-0"
-                      data-ocid="submit.primary_button"
-                    >
-                      <IndianRupee className="w-4 h-4" />
-                      Open UPI App — Pay ₹{selectedPlan.price}
-                    </Button>
+                  {/* QR Code */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Scan QR Code to Pay
+                    </p>
+                    <div className="flex flex-col items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setQrModalOpen(true)}
+                        className="focus:outline-none"
+                        data-ocid="submit.qr_code"
+                      >
+                        <img
+                          src="/assets/uploads/WhatsApp-Image-2026-03-13-at-9.22.44-PM-1.jpeg"
+                          alt="UPI QR Code"
+                          className="w-52 h-52 rounded-xl object-cover bg-white p-2 mx-auto cursor-zoom-in hover:opacity-90 transition-opacity"
+                        />
+                      </button>
+                      <p className="text-xs font-bold text-muted-foreground text-center">
+                        Scan with any UPI app &nbsp;·&nbsp;{" "}
+                        <span className="text-primary">Tap to enlarge</span>
+                      </p>
+                    </div>
+                  </div>
 
-                    {/* Accepted payment logos row */}
-                    <div className="flex items-center justify-center gap-1.5 flex-wrap pt-1">
-                      <span className="text-[9px] text-muted-foreground/60 mr-0.5">
-                        Accepted:
-                      </span>
-                      {[
-                        { label: "GPay", cls: "bg-blue-600/20 text-blue-400" },
-                        {
-                          label: "PhonePe",
-                          cls: "bg-purple-600/20 text-purple-400",
-                        },
-                        { label: "Paytm", cls: "bg-sky-500/20 text-sky-400" },
-                        {
-                          label: "FamPay",
-                          cls: "bg-orange-500/20 text-orange-400",
-                        },
-                        {
-                          label: "Any UPI",
-                          cls: "bg-emerald-500/20 text-emerald-400",
-                        },
-                      ].map((badge) => (
-                        <span
-                          key={badge.label}
-                          className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${badge.cls}`}
+                  {/* Payment Apps */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Pay via App
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {UPI_APPS.map((app) => (
+                        <button
+                          key={app.id}
+                          type="button"
+                          onClick={() =>
+                            handleUpiAppClick(app.deepLink(finalPrice))
+                          }
+                          className={`flex items-center gap-3 rounded-xl border-2 p-3 transition-all font-bold ${app.borderClass} bg-muted/10 hover:bg-muted/30`}
+                          data-ocid={`submit.payment.${app.id}.button`}
                         >
-                          {badge.label}
-                        </span>
+                          {app.logo ? (
+                            <img
+                              src={app.logo}
+                              alt={app.name}
+                              className="w-9 h-9 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="w-9 h-9 rounded-lg bg-yellow-400 flex items-center justify-center font-bold text-black text-sm">
+                              F
+                            </div>
+                          )}
+                          <span className="text-sm font-bold">{app.name}</span>
+                        </button>
                       ))}
                     </div>
+                  </div>
 
-                    <p className="text-[10px] text-muted-foreground text-center">
-                      Share the payment screenshot on WhatsApp after paying.
+                  {/* Bank limit tip */}
+                  <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/30 p-4 space-y-2">
+                    <p className="text-xs font-bold text-yellow-400 flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Bank Limit Error? Try These:
                     </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </form>
+                    <ul className="space-y-1">
+                      <li className="text-xs font-semibold text-muted-foreground">
+                        • Switch to a different UPI app (e.g. PhonePe → Google
+                        Pay)
+                      </li>
+                      <li className="text-xs font-semibold text-muted-foreground">
+                        • Check/increase your bank's UPI daily limit in your
+                        bank app
+                      </li>
+                      <li className="text-xs font-semibold text-muted-foreground">
+                        • Daily UPI limits reset at midnight
+                      </li>
+                      <li className="text-xs font-semibold text-muted-foreground">
+                        • Contact support if the issue persists
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        recordPaymentCancelled();
+                        setStep(3);
+                      }}
+                      className="flex-1 h-12 font-bold"
+                      data-ocid="submit.cancel_button"
+                    >
+                      ← Back
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (actor && orderId) {
+                          (actor as any)
+                            .setPaymentProcessing(orderId)
+                            .catch(() => {});
+                        }
+                        setStep(5);
+                      }}
+                      className="flex-[2] gradient-primary border-0 text-white font-bold h-12 hover:opacity-90"
+                      data-ocid="submit.confirm_button"
+                    >
+                      ✅ I have paid
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* ── STEP 5: VERIFICATION TIMER ── */}
+          {step === 5 && (
+            <motion.div
+              key="step5"
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="card-glow bg-card border-border">
+                <CardHeader>
+                  <CardTitle className="font-display text-xl flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    Payment Verification in Progress
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6 text-center">
+                  <div className="relative w-24 h-24 mx-auto">
+                    <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+                    <div className="relative w-24 h-24 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center">
+                      <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="font-bold text-lg">
+                      Verifying your payment...
+                    </p>
+                    <p className="text-muted-foreground text-sm font-semibold">
+                      Your payment is being verified by our team. This usually
+                      takes a few minutes.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
+                    <span className="text-xs font-bold text-green-400">
+                      Waiting for admin verification...
+                    </span>
+                  </div>
+
+                  {customerId && (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/15 border border-violet-500/30">
+                      <span className="text-xs font-bold text-violet-400">
+                        Customer ID:
+                      </span>
+                      <span className="text-sm font-bold text-violet-200">
+                        {customerId}
+                      </span>
+                    </div>
+                  )}
+
+                  {orderId !== null && (
+                    <div className="rounded-xl bg-muted/20 border border-border p-3">
+                      <p className="text-xs font-bold text-muted-foreground">
+                        Order ID
+                      </p>
+                      <p className="text-sm font-bold font-mono">
+                        #{orderId.toString()}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="rounded-xl bg-blue-500/10 border border-blue-500/30 p-4">
+                    <p className="text-sm font-bold text-blue-300">
+                      💡 Once admin approves your payment, this page will
+                      automatically update.
+                    </p>
+                  </div>
+
+                  <a
+                    href="/support"
+                    className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline"
+                    data-ocid="submit.support_link"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Contact Support
+                  </a>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      recordPaymentCancelled();
+                      navigate({ to: "/" });
+                    }}
+                    className="w-full h-12 font-bold border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500 mt-2"
+                    data-ocid="submit.cancel_payment_button"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Cancel Payment
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* ── STEP 6: APPROVED ── */}
+          {step === 6 && (
+            <motion.div
+              key="step6"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.4, type: "spring" }}
+            >
+              <Card className="card-glow bg-card border-border">
+                <CardContent className="p-10 text-center space-y-6">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                    className="w-24 h-24 rounded-full bg-green-500/20 border-2 border-green-500 mx-auto flex items-center justify-center"
+                  >
+                    <CheckCircle2 className="w-14 h-14 text-green-400" />
+                  </motion.div>
+
+                  <div className="space-y-2">
+                    <h2 className="font-display font-bold text-3xl text-green-400">
+                      Payment Approved! ✅
+                    </h2>
+                    <p className="text-muted-foreground font-bold">
+                      Your order has been confirmed. We will start editing your
+                      video soon!
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl bg-muted/20 border border-border p-5 space-y-3 text-left">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Order Summary
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold">Plan</span>
+                      <span className="text-sm font-bold text-primary">
+                        {selectedPlan.name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold">Amount Paid</span>
+                      <span className="text-sm font-extrabold text-green-400">
+                        ₹{finalPrice}
+                      </span>
+                    </div>
+                    {customerId && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-bold">Customer ID</span>
+                        <span className="text-sm font-bold text-violet-300">
+                          {customerId}
+                        </span>
+                      </div>
+                    )}
+                    {orderId !== null && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-bold">Order ID</span>
+                        <span className="text-sm font-bold font-mono">
+                          #{orderId.toString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={() => navigate({ to: "/orders" })}
+                    className="w-full gradient-primary border-0 text-white font-bold h-12 hover:opacity-90"
+                    data-ocid="submit.orders_button"
+                  >
+                    View My Orders →
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* UPI App Selector Dialog */}
-      <Dialog open={showUpiSelector} onOpenChange={setShowUpiSelector}>
-        <DialogContent
-          className="sm:max-w-sm bg-card border-border"
-          data-ocid="submit.dialog"
+      {/* QR Code Fullscreen Modal */}
+      {qrModalOpen && (
+        <dialog
+          open
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 m-0 max-w-none w-full h-full border-0"
+          onClick={() => setQrModalOpen(false)}
+          onKeyDown={(e) => e.key === "Escape" && setQrModalOpen(false)}
+          data-ocid="submit.qr_code.modal"
         >
-          <DialogHeader>
-            <DialogTitle className="font-display text-xl text-center">
-              Choose UPI App
-            </DialogTitle>
-          </DialogHeader>
-          <p className="text-xs text-muted-foreground text-center -mt-1 mb-2">
-            Pay ₹{selectedPlan.price} to{" "}
-            <span className="font-mono text-green-300">{UPI_ID}</span>
-          </p>
-          <div className="flex flex-col gap-3">
-            {UPI_APPS.map((app) => (
-              <button
-                key={app.id}
-                type="button"
-                onClick={() =>
-                  handleUpiAppClick(app.deepLink(selectedPlan.price))
-                }
-                className={`flex items-center gap-4 w-full rounded-xl border px-4 py-3.5 transition-all duration-150 hover:bg-muted/20 active:scale-[0.98] ${app.borderClass}`}
-                data-ocid="submit.secondary_button"
-              >
-                <div
-                  className={`w-10 h-10 rounded-xl ${app.bgClass} flex items-center justify-center shrink-0`}
-                >
-                  <span className="text-white font-bold text-base">
-                    {app.initial}
-                  </span>
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-semibold text-sm">{app.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Tap to open &amp; pay
-                  </p>
-                </div>
-                <IndianRupee className={`w-4 h-4 ${app.textClass}`} />
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowUpiSelector(false)}
-            className="mt-1 w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
-            data-ocid="submit.cancel_button"
+          <div
+            className="relative bg-white p-4 rounded-2xl max-w-xs w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
-            Cancel
-          </button>
-        </DialogContent>
-      </Dialog>
+            <button
+              type="button"
+              onClick={() => setQrModalOpen(false)}
+              className="absolute -top-3 -right-3 bg-black text-white rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold hover:bg-gray-800 transition-colors"
+              data-ocid="submit.qr_code.close_button"
+            >
+              ✕
+            </button>
+            <img
+              src="/assets/uploads/WhatsApp-Image-2026-03-13-at-9.22.44-PM-1.jpeg"
+              alt="UPI QR Code - Full Size"
+              className="w-full rounded-xl object-contain"
+            />
+            <p className="text-center text-sm font-bold text-gray-600 mt-3">
+              Scan to Pay via UPI
+            </p>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 }

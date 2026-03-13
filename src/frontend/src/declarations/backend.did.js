@@ -24,6 +24,23 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const ChatMessage = IDL.Record({
+  'id' : IDL.Nat,
+  'customerPrincipal' : IDL.Principal,
+  'text' : IDL.Text,
+  'timestamp' : IDL.Int,
+  'fromAdmin' : IDL.Bool,
+});
+export const CustomerChat = IDL.Record({
+  'customer' : IDL.Principal,
+  'messages' : IDL.Vec(ChatMessage),
+  'customerId' : IDL.Text,
+});
+export const CustomerProfile = IDL.Record({
+  'principal' : IDL.Principal,
+  'customerId' : IDL.Text,
+  'registeredAt' : IDL.Int,
+});
 export const Status = IDL.Variant({
   'Cancelled' : IDL.Null,
   'InProgress' : IDL.Null,
@@ -43,6 +60,25 @@ export const Order = IDL.Record({
   'price' : IDL.Nat,
   'contactPhone' : IDL.Text,
   'videoFileId' : IDL.Text,
+});
+export const PaymentStatus = IDL.Variant({
+  'Approved' : IDL.Null,
+  'Cancelled' : IDL.Null,
+  'Processing' : IDL.Null,
+  'Pending' : IDL.Null,
+});
+export const PaymentStatusInfo = IDL.Record({
+  'status' : PaymentStatus,
+  'contactName' : IDL.Text,
+  'orderId' : IDL.Nat,
+  'updatedAt' : IDL.Int,
+  'customerId' : IDL.Text,
+  'price' : IDL.Nat,
+});
+export const UserProfile = IDL.Record({
+  'name' : IDL.Text,
+  'email' : IDL.Text,
+  'phone' : IDL.Text,
 });
 export const Result = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
 
@@ -74,10 +110,22 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'approvePayment' : IDL.Func([IDL.Nat], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'cancelPayment' : IDL.Func([IDL.Nat], [], []),
+  'getAllChats' : IDL.Func([], [IDL.Vec(CustomerChat)], ['query']),
+  'getAllCustomers' : IDL.Func([], [IDL.Vec(CustomerProfile)], ['query']),
   'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+  'getAllPaymentStatuses' : IDL.Func(
+      [],
+      [IDL.Vec(PaymentStatusInfo)],
+      ['query'],
+    ),
+  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getMyChat' : IDL.Func([], [IDL.Vec(ChatMessage)], ['query']),
   'getMyOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+  'getMyProfile' : IDL.Func([], [IDL.Opt(CustomerProfile)], ['query']),
   'getOrder' : IDL.Func([IDL.Nat], [IDL.Opt(Order)], ['query']),
   'getOrderStats' : IDL.Func(
       [],
@@ -91,7 +139,19 @@ export const idlService = IDL.Service({
       ],
       ['query'],
     ),
+  'getPaymentStatus' : IDL.Func([IDL.Nat], [PaymentStatus], ['query']),
+  'getUserProfile' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(UserProfile)],
+      ['query'],
+    ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isPaymentApproved' : IDL.Func([IDL.Nat], [IDL.Bool], ['query']),
+  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'selfRegister' : IDL.Func([], [IDL.Text], []),
+  'sendAdminReply' : IDL.Func([IDL.Principal, IDL.Text], [Result], []),
+  'sendCustomerMessage' : IDL.Func([IDL.Text], [Result], []),
+  'setPaymentProcessing' : IDL.Func([IDL.Nat], [], []),
   'submitOrder' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [IDL.Nat],
@@ -119,6 +179,23 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const ChatMessage = IDL.Record({
+    'id' : IDL.Nat,
+    'customerPrincipal' : IDL.Principal,
+    'text' : IDL.Text,
+    'timestamp' : IDL.Int,
+    'fromAdmin' : IDL.Bool,
+  });
+  const CustomerChat = IDL.Record({
+    'customer' : IDL.Principal,
+    'messages' : IDL.Vec(ChatMessage),
+    'customerId' : IDL.Text,
+  });
+  const CustomerProfile = IDL.Record({
+    'principal' : IDL.Principal,
+    'customerId' : IDL.Text,
+    'registeredAt' : IDL.Int,
+  });
   const Status = IDL.Variant({
     'Cancelled' : IDL.Null,
     'InProgress' : IDL.Null,
@@ -138,6 +215,25 @@ export const idlFactory = ({ IDL }) => {
     'price' : IDL.Nat,
     'contactPhone' : IDL.Text,
     'videoFileId' : IDL.Text,
+  });
+  const PaymentStatus = IDL.Variant({
+    'Approved' : IDL.Null,
+    'Cancelled' : IDL.Null,
+    'Processing' : IDL.Null,
+    'Pending' : IDL.Null,
+  });
+  const PaymentStatusInfo = IDL.Record({
+    'status' : PaymentStatus,
+    'contactName' : IDL.Text,
+    'orderId' : IDL.Nat,
+    'updatedAt' : IDL.Int,
+    'customerId' : IDL.Text,
+    'price' : IDL.Nat,
+  });
+  const UserProfile = IDL.Record({
+    'name' : IDL.Text,
+    'email' : IDL.Text,
+    'phone' : IDL.Text,
   });
   const Result = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
   
@@ -169,10 +265,22 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'approvePayment' : IDL.Func([IDL.Nat], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'cancelPayment' : IDL.Func([IDL.Nat], [], []),
+    'getAllChats' : IDL.Func([], [IDL.Vec(CustomerChat)], ['query']),
+    'getAllCustomers' : IDL.Func([], [IDL.Vec(CustomerProfile)], ['query']),
     'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+    'getAllPaymentStatuses' : IDL.Func(
+        [],
+        [IDL.Vec(PaymentStatusInfo)],
+        ['query'],
+      ),
+    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getMyChat' : IDL.Func([], [IDL.Vec(ChatMessage)], ['query']),
     'getMyOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+    'getMyProfile' : IDL.Func([], [IDL.Opt(CustomerProfile)], ['query']),
     'getOrder' : IDL.Func([IDL.Nat], [IDL.Opt(Order)], ['query']),
     'getOrderStats' : IDL.Func(
         [],
@@ -186,7 +294,19 @@ export const idlFactory = ({ IDL }) => {
         ],
         ['query'],
       ),
+    'getPaymentStatus' : IDL.Func([IDL.Nat], [PaymentStatus], ['query']),
+    'getUserProfile' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(UserProfile)],
+        ['query'],
+      ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isPaymentApproved' : IDL.Func([IDL.Nat], [IDL.Bool], ['query']),
+    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'selfRegister' : IDL.Func([], [IDL.Text], []),
+    'sendAdminReply' : IDL.Func([IDL.Principal, IDL.Text], [Result], []),
+    'sendCustomerMessage' : IDL.Func([IDL.Text], [Result], []),
+    'setPaymentProcessing' : IDL.Func([IDL.Nat], [], []),
     'submitOrder' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [IDL.Nat],

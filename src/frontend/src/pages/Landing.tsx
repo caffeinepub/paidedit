@@ -10,6 +10,7 @@ import {
   Mail,
   Scissors,
   Shield,
+  ShieldCheck,
   Star,
   Zap,
 } from "lucide-react";
@@ -52,7 +53,7 @@ const plans = [
     badge: "🔥 HOT",
     name: "Free Fire Video Edit",
     subtitle: "Gaming Highlights",
-    price: 39,
+    price: 50,
     unit: "per video",
     featured: false,
     fireHot: true,
@@ -65,81 +66,34 @@ const plans = [
     ],
   },
   {
-    id: 1,
-    badge: "Basic",
-    name: "Instagram Reel",
-    subtitle: "Instagram 15 seconds",
-    price: 49,
-    unit: "per video",
-    featured: false,
-    features: [
-      "15-second video",
-      "Optimised for Instagram",
-      "Cuts & trims",
-      "Music addition",
-      "Captions",
-    ],
-  },
-  {
     id: 2,
     badge: "Most Popular",
     name: "High Quality Video",
-    subtitle: "Full HD Editing",
+    subtitle: "Full HD • 4 Videos/Day",
     price: 99,
-    unit: "per video",
+    unit: "1 day",
     featured: true,
     features: [
+      "4 videos per day",
+      "Valid for 1 day",
       "Full HD quality",
       "Color grading",
       "Transition effects",
       "Background music",
-      "Text overlay",
-      "HD export",
-    ],
-  },
-  {
-    id: 3,
-    badge: "New",
-    name: "5 Minute Video",
-    subtitle: "Up to 5 minutes",
-    price: 149,
-    unit: "per video",
-    featured: false,
-    features: [
-      "Up to 5 minutes",
-      "Full HD quality",
-      "Transitions",
-      "Background music",
-      "Text overlay",
-      "HD export",
-    ],
-  },
-  {
-    id: 4,
-    badge: "Package",
-    name: "1 Month Package",
-    subtitle: "Unlimited Videos",
-    price: 149,
-    unit: "per month",
-    featured: false,
-    features: [
-      "Unlimited videos",
-      "All high-quality features",
-      "Priority delivery",
-      "24/7 support",
     ],
   },
   {
     id: 5,
-    badge: "Best Deal",
-    name: "3 Month Package",
-    subtitle: "Best Value Bundle",
+    badge: "🔥 Free Fire",
+    name: "Free Fire 15 Day Package",
+    subtitle: "Free Fire Only • 15 Days",
     price: 499,
-    unit: "3 months",
+    unit: "15 days",
     featured: false,
     features: [
-      "Everything in 1 Month",
-      "Save ₹148",
+      "Free Fire edits only",
+      "2 videos per day",
+      "15 days validity",
       "Priority support",
       "Dedicated editor",
     ],
@@ -160,6 +114,23 @@ const plans = [
       "Priority delivery",
       "Dedicated editor",
       "24/7 support",
+    ],
+  },
+  {
+    id: 7,
+    badge: "💎 Premium 15 Days",
+    name: "15 Day Premium",
+    subtitle: "2 Videos Per Day",
+    price: 149,
+    unit: "15 days",
+    featured: false,
+    isPremium15: true,
+    features: [
+      "2 videos per day",
+      "Premium editing quality",
+      "Diamond member status",
+      "Priority delivery",
+      "15 days access",
     ],
   },
 ];
@@ -218,7 +189,7 @@ export default function Landing() {
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/30 bg-white/10 text-white text-sm font-medium mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              Starting from just ₹39 per video
+              Starting from just ₹50 per video
             </div>
 
             <h1 className="font-display font-extrabold text-6xl sm:text-7xl md:text-8xl lg:text-9xl leading-none tracking-tight mb-6">
@@ -226,10 +197,10 @@ export default function Landing() {
               <span className="text-foreground">EDIT</span>
             </h1>
 
-            <p className="text-xl sm:text-2xl text-muted-foreground max-w-2xl mx-auto mb-10 font-light">
+            <p className="text-xl sm:text-2xl text-white font-bold max-w-2xl mx-auto mb-10 drop-shadow-lg">
               Professional short video editing at your fingertips.
               <br />
-              <span className="text-foreground font-medium">
+              <span className="text-white font-extrabold text-2xl sm:text-3xl tracking-wide drop-shadow-lg">
                 Fast. Affordable. Cinematic.
               </span>
             </p>
@@ -336,7 +307,7 @@ export default function Landing() {
             </p>
           </motion.div>
 
-          {/* 6 cards: Free Fire highlighted first, then 3+2 */}
+          {/* Pricing cards: row1 full, row2 3-col, row3 full */}
           <div className="max-w-5xl mx-auto">
             <div className="mb-6">
               <PricingCard key={plans[0].id} plan={plans[0]} index={0} />
@@ -346,13 +317,8 @@ export default function Landing() {
                 <PricingCard key={plan.id} plan={plan} index={i + 1} />
               ))}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:max-w-2xl md:mx-auto mb-6">
-              {plans.slice(4, 6).map((plan, i) => (
-                <PricingCard key={plan.id} plan={plan} index={i + 4} />
-              ))}
-            </div>
-            <div>
-              <PricingCard key={plans[6].id} plan={plans[6]} index={6} />
+            <div className="md:max-w-sm md:mx-auto">
+              <PricingCard key={plans[4].id} plan={plans[4]} index={4} />
             </div>
           </div>
         </div>
@@ -469,6 +435,19 @@ export default function Landing() {
           </motion.div>
         </div>
       </section>
+      {/* Admin Login Floating Button */}
+      <div className="flex justify-center pb-8 mt-4">
+        <Link to="/admin">
+          <button
+            type="button"
+            data-ocid="landing.admin.link"
+            className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-primary transition-colors opacity-60 hover:opacity-100 bg-card border border-border rounded-full px-4 py-2 shadow-sm"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Admin Login
+          </button>
+        </Link>
+      </div>
     </div>
   );
 }
@@ -491,9 +470,11 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
             ? "border-primary/60 shadow-lg shadow-primary/20 scale-105"
             : "bestOffer" in plan && plan.bestOffer
               ? "border-yellow-400/70 shadow-xl shadow-yellow-400/20 ring-1 ring-yellow-400/40"
-              : plan.badge === "Best Deal"
-                ? "border-amber-500/50 shadow-lg shadow-amber-500/10"
-                : "border-border hover:border-primary/40"
+              : "isPremium15" in plan && plan.isPremium15
+                ? "border-blue-400/70 shadow-xl shadow-blue-400/20 ring-1 ring-blue-400/40"
+                : plan.badge === "Best Deal"
+                  ? "border-amber-500/50 shadow-lg shadow-amber-500/10"
+                  : "border-border hover:border-primary/40"
         }`}
       >
         {plan.featured && (
@@ -501,6 +482,9 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
         )}
         {"bestOffer" in plan && plan.bestOffer && (
           <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/8 to-amber-500/5 pointer-events-none" />
+        )}
+        {"isPremium15" in plan && plan.isPremium15 && (
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-400/8 to-purple-500/5 pointer-events-none" />
         )}
         {plan.badge === "Best Deal" &&
           !("bestOffer" in plan && plan.bestOffer) && (
@@ -516,9 +500,11 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
                   ? "bg-primary/20 text-primary"
                   : "bestOffer" in plan && plan.bestOffer
                     ? "bg-yellow-400/20 text-yellow-300 ring-1 ring-yellow-400/40"
-                    : plan.badge === "Best Deal"
-                      ? "bg-amber-500/20 text-amber-300"
-                      : "bg-muted text-muted-foreground"
+                    : "isPremium15" in plan && plan.isPremium15
+                      ? "bg-blue-400/20 text-blue-300 ring-1 ring-blue-400/40"
+                      : plan.badge === "Best Deal"
+                        ? "bg-amber-500/20 text-amber-300"
+                        : "bg-muted text-muted-foreground"
               }`}
             >
               {plan.badge}
@@ -537,9 +523,11 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
                   ? "text-primary"
                   : "bestOffer" in plan && plan.bestOffer
                     ? "text-yellow-400"
-                    : plan.badge === "Best Deal"
-                      ? "text-amber-400"
-                      : "text-foreground"
+                    : "isPremium15" in plan && plan.isPremium15
+                      ? "text-blue-400"
+                      : plan.badge === "Best Deal"
+                        ? "text-amber-400"
+                        : "text-foreground"
               }`}
             />
             <span
@@ -548,9 +536,11 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
                   ? "gradient-text"
                   : "bestOffer" in plan && plan.bestOffer
                     ? "text-yellow-300"
-                    : plan.badge === "Best Deal"
-                      ? "text-amber-300"
-                      : "text-foreground"
+                    : "isPremium15" in plan && plan.isPremium15
+                      ? "text-blue-300"
+                      : plan.badge === "Best Deal"
+                        ? "text-amber-300"
+                        : "text-foreground"
               }`}
             >
               {plan.price}
@@ -568,9 +558,11 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
                       ? "text-primary"
                       : "bestOffer" in plan && plan.bestOffer
                         ? "text-yellow-400"
-                        : plan.badge === "Best Deal"
-                          ? "text-amber-400"
-                          : "text-accent"
+                        : "isPremium15" in plan && plan.isPremium15
+                          ? "text-blue-400"
+                          : plan.badge === "Best Deal"
+                            ? "text-amber-400"
+                            : "text-accent"
                   }`}
                 />
                 <span className="text-foreground">{feat}</span>

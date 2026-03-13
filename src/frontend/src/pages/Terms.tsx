@@ -7,8 +7,19 @@ import {
   Scale,
   Shield,
   User,
+  XCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
+
+const importantPolicy = {
+  title: "⚠️ IMPORTANT POLICY — PLEASE READ BEFORE ORDERING",
+  points: [
+    "All payments made to PAIDEDIT are strictly NON-REFUNDABLE under any circumstances.",
+    "Once payment is made via UPI, no refund or reversal will be processed.",
+    "Do NOT place an order if you are not sure — review all plans carefully before paying.",
+    "In case of any issue on our side, we will redo the edit FREE OF CHARGE — not issue a refund.",
+  ],
+};
 
 const sections = [
   {
@@ -90,6 +101,36 @@ export default function Terms() {
             Please read these terms carefully before using PAIDEDIT. By placing
             an order, you agree to all terms listed below.
           </p>
+        </motion.div>
+
+        {/* IMPORTANT POLICY — Red Banner */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+          data-ocid="important.policy.card"
+        >
+          <div className="rounded-2xl border-2 border-red-500 bg-red-500/10 p-6 shadow-lg shadow-red-500/20">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
+                <XCircle className="w-6 h-6 text-red-400" />
+              </div>
+              <h2 className="font-display font-extrabold text-lg text-red-400 uppercase tracking-wide">
+                {importantPolicy.title}
+              </h2>
+            </div>
+            <ul className="space-y-3">
+              {importantPolicy.points.map((point) => (
+                <li key={point} className="flex items-start gap-3">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-red-400" />
+                  <p className="text-sm font-semibold text-red-300 leading-relaxed">
+                    {point}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
         </motion.div>
 
         {/* Sections */}

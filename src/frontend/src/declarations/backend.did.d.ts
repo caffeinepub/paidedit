@@ -10,6 +10,23 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface ChatMessage {
+  'id' : bigint,
+  'customerPrincipal' : Principal,
+  'text' : string,
+  'timestamp' : bigint,
+  'fromAdmin' : boolean,
+}
+export interface CustomerChat {
+  'customer' : Principal,
+  'messages' : Array<ChatMessage>,
+  'customerId' : string,
+}
+export interface CustomerProfile {
+  'principal' : Principal,
+  'customerId' : string,
+  'registeredAt' : bigint,
+}
 export interface Order {
   'id' : bigint,
   'videoFileName' : string,
@@ -24,12 +41,29 @@ export interface Order {
   'contactPhone' : string,
   'videoFileId' : string,
 }
+export type PaymentStatus = { 'Approved' : null } |
+  { 'Cancelled' : null } |
+  { 'Processing' : null } |
+  { 'Pending' : null };
+export interface PaymentStatusInfo {
+  'status' : PaymentStatus,
+  'contactName' : string,
+  'orderId' : bigint,
+  'updatedAt' : bigint,
+  'customerId' : string,
+  'price' : bigint,
+}
 export type Result = { 'ok' : null } |
   { 'err' : string };
 export type Status = { 'Cancelled' : null } |
   { 'InProgress' : null } |
   { 'Completed' : null } |
   { 'Pending' : null };
+export interface UserProfile {
+  'name' : string,
+  'email' : string,
+  'phone' : string,
+}
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
@@ -61,10 +95,18 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'approvePayment' : ActorMethod<[bigint], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'cancelPayment' : ActorMethod<[bigint], undefined>,
+  'getAllChats' : ActorMethod<[], Array<CustomerChat>>,
+  'getAllCustomers' : ActorMethod<[], Array<CustomerProfile>>,
   'getAllOrders' : ActorMethod<[], Array<Order>>,
+  'getAllPaymentStatuses' : ActorMethod<[], Array<PaymentStatusInfo>>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getMyChat' : ActorMethod<[], Array<ChatMessage>>,
   'getMyOrders' : ActorMethod<[], Array<Order>>,
+  'getMyProfile' : ActorMethod<[], [] | [CustomerProfile]>,
   'getOrder' : ActorMethod<[bigint], [] | [Order]>,
   'getOrderStats' : ActorMethod<
     [],
@@ -75,7 +117,15 @@ export interface _SERVICE {
       'inProgress' : bigint,
     }
   >,
+  'getPaymentStatus' : ActorMethod<[bigint], PaymentStatus>,
+  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'isPaymentApproved' : ActorMethod<[bigint], boolean>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'selfRegister' : ActorMethod<[], string>,
+  'sendAdminReply' : ActorMethod<[Principal, string], Result>,
+  'sendCustomerMessage' : ActorMethod<[string], Result>,
+  'setPaymentProcessing' : ActorMethod<[bigint], undefined>,
   'submitOrder' : ActorMethod<
     [string, string, string, string, string, string],
     bigint
