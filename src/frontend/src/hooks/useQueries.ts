@@ -78,6 +78,18 @@ export function useSubmitOrder() {
         params.contactPhone,
       );
     },
+    retry: (failureCount, error) => {
+      const msg = error instanceof Error ? error.message : String(error);
+      const isNetworkIssue =
+        msg.toLowerCase().includes("polling") ||
+        msg.toLowerCase().includes("timeout") ||
+        msg.toLowerCase().includes("certificate");
+      if (isNetworkIssue) {
+        return failureCount < 3;
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(2000 * (attemptIndex + 1), 10000),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["myOrders"] });
     },

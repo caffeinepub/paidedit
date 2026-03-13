@@ -6,6 +6,8 @@ import {
   CheckCircle2,
   Clock,
   IndianRupee,
+  Instagram,
+  Mail,
   Scissors,
   Shield,
   Star,
@@ -45,6 +47,23 @@ const features = [
 ];
 
 const plans = [
+  {
+    id: 0,
+    badge: "🔥 HOT",
+    name: "Free Fire Video Edit",
+    subtitle: "Gaming Highlights",
+    price: 39,
+    unit: "per video",
+    featured: false,
+    fireHot: true,
+    features: [
+      "Free Fire gameplay highlights",
+      "Kills & moments edit",
+      "Epic music sync",
+      "Gaming effects",
+      "Fast delivery",
+    ],
+  },
   {
     id: 1,
     badge: "Basic",
@@ -125,6 +144,24 @@ const plans = [
       "Dedicated editor",
     ],
   },
+  {
+    id: 6,
+    badge: "🏆 Best Offer",
+    name: "Free Fire 1 Month",
+    subtitle: "Unlimited Gaming Edits",
+    price: 999,
+    unit: "per month",
+    featured: false,
+    bestOffer: true,
+    features: [
+      "Unlimited Free Fire edits",
+      "Gaming highlights every day",
+      "Epic music sync",
+      "Priority delivery",
+      "Dedicated editor",
+      "24/7 support",
+    ],
+  },
 ];
 
 const testimonials = [
@@ -181,7 +218,7 @@ export default function Landing() {
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/30 bg-white/10 text-white text-sm font-medium mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              Starting from just ₹49 per video
+              Starting from just ₹39 per video
             </div>
 
             <h1 className="font-display font-extrabold text-6xl sm:text-7xl md:text-8xl lg:text-9xl leading-none tracking-tight mb-6">
@@ -299,17 +336,23 @@ export default function Landing() {
             </p>
           </motion.div>
 
-          {/* 5 cards: 3 on top row, 2 centered on bottom */}
+          {/* 6 cards: Free Fire highlighted first, then 3+2 */}
           <div className="max-w-5xl mx-auto">
+            <div className="mb-6">
+              <PricingCard key={plans[0].id} plan={plans[0]} index={0} />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              {plans.slice(0, 3).map((plan, i) => (
-                <PricingCard key={plan.id} plan={plan} index={i} />
+              {plans.slice(1, 4).map((plan, i) => (
+                <PricingCard key={plan.id} plan={plan} index={i + 1} />
               ))}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:max-w-2xl md:mx-auto">
-              {plans.slice(3).map((plan, i) => (
-                <PricingCard key={plan.id} plan={plan} index={i + 3} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:max-w-2xl md:mx-auto mb-6">
+              {plans.slice(4, 6).map((plan, i) => (
+                <PricingCard key={plan.id} plan={plan} index={i + 4} />
               ))}
+            </div>
+            <div>
+              <PricingCard key={plans[6].id} plan={plans[6]} index={6} />
             </div>
           </div>
         </div>
@@ -362,6 +405,34 @@ export default function Landing() {
               </Card>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Support Banner */}
+      <section className="py-6 bg-card/50 border-y border-border">
+        <div className="container mx-auto px-4 text-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-muted-foreground">
+            <span>Need help?</span>
+            <a
+              href="mailto:paidedit081@gmail.com"
+              className="flex items-center gap-1.5 text-primary underline underline-offset-2 hover:opacity-80 transition-colors font-medium"
+              data-ocid="support.link"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              paidedit081@gmail.com
+            </a>
+            <span className="hidden sm:inline text-muted-foreground/40">·</span>
+            <a
+              href="https://instagram.com/paidedit081"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-pink-400 hover:text-pink-300 transition-colors font-medium"
+              data-ocid="support.instagram.link"
+            >
+              <Instagram className="w-3.5 h-3.5" />
+              @paidedit081 on Instagram
+            </a>
+          </div>
         </div>
       </section>
 
@@ -418,17 +489,23 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
         className={`card-glow h-full bg-card relative overflow-hidden transition-all duration-300 ${
           plan.featured
             ? "border-primary/60 shadow-lg shadow-primary/20 scale-105"
-            : plan.badge === "Best Deal"
-              ? "border-amber-500/50 shadow-lg shadow-amber-500/10"
-              : "border-border hover:border-primary/40"
+            : "bestOffer" in plan && plan.bestOffer
+              ? "border-yellow-400/70 shadow-xl shadow-yellow-400/20 ring-1 ring-yellow-400/40"
+              : plan.badge === "Best Deal"
+                ? "border-amber-500/50 shadow-lg shadow-amber-500/10"
+                : "border-border hover:border-primary/40"
         }`}
       >
         {plan.featured && (
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none" />
         )}
-        {plan.badge === "Best Deal" && (
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-orange-500/5 pointer-events-none" />
+        {"bestOffer" in plan && plan.bestOffer && (
+          <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/8 to-amber-500/5 pointer-events-none" />
         )}
+        {plan.badge === "Best Deal" &&
+          !("bestOffer" in plan && plan.bestOffer) && (
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-orange-500/5 pointer-events-none" />
+          )}
 
         <CardContent className="p-6 relative flex flex-col h-full">
           {/* Badge */}
@@ -437,9 +514,11 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
               className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                 plan.featured
                   ? "bg-primary/20 text-primary"
-                  : plan.badge === "Best Deal"
-                    ? "bg-amber-500/20 text-amber-300"
-                    : "bg-muted text-muted-foreground"
+                  : "bestOffer" in plan && plan.bestOffer
+                    ? "bg-yellow-400/20 text-yellow-300 ring-1 ring-yellow-400/40"
+                    : plan.badge === "Best Deal"
+                      ? "bg-amber-500/20 text-amber-300"
+                      : "bg-muted text-muted-foreground"
               }`}
             >
               {plan.badge}
@@ -456,18 +535,22 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
               className={`w-6 h-6 mb-1 ${
                 plan.featured
                   ? "text-primary"
-                  : plan.badge === "Best Deal"
-                    ? "text-amber-400"
-                    : "text-foreground"
+                  : "bestOffer" in plan && plan.bestOffer
+                    ? "text-yellow-400"
+                    : plan.badge === "Best Deal"
+                      ? "text-amber-400"
+                      : "text-foreground"
               }`}
             />
             <span
               className={`font-display font-extrabold text-5xl leading-none ${
                 plan.featured
                   ? "gradient-text"
-                  : plan.badge === "Best Deal"
-                    ? "text-amber-300"
-                    : "text-foreground"
+                  : "bestOffer" in plan && plan.bestOffer
+                    ? "text-yellow-300"
+                    : plan.badge === "Best Deal"
+                      ? "text-amber-300"
+                      : "text-foreground"
               }`}
             >
               {plan.price}
@@ -483,9 +566,11 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
                   className={`w-4 h-4 shrink-0 ${
                     plan.featured
                       ? "text-primary"
-                      : plan.badge === "Best Deal"
-                        ? "text-amber-400"
-                        : "text-accent"
+                      : "bestOffer" in plan && plan.bestOffer
+                        ? "text-yellow-400"
+                        : plan.badge === "Best Deal"
+                          ? "text-amber-400"
+                          : "text-accent"
                   }`}
                 />
                 <span className="text-foreground">{feat}</span>
@@ -498,9 +583,11 @@ function PricingCard({ plan, index }: { plan: Plan; index: number }) {
             className={`w-full font-semibold h-11 transition-opacity ${
               plan.featured
                 ? "gradient-primary border-0 text-white hover:opacity-90"
-                : plan.badge === "Best Deal"
-                  ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30"
-                  : "bg-card border border-border hover:border-primary/50 hover:bg-primary/5 text-foreground"
+                : "bestOffer" in plan && plan.bestOffer
+                  ? "bg-yellow-400/20 border border-yellow-400/50 text-yellow-300 hover:bg-yellow-400/30 font-bold"
+                  : plan.badge === "Best Deal"
+                    ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30"
+                    : "bg-card border border-border hover:border-primary/50 hover:bg-primary/5 text-foreground"
             }`}
             data-ocid="pricing.primary_button"
           >

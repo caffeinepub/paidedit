@@ -15,6 +15,7 @@ import Landing from "./pages/Landing";
 import Orders from "./pages/Orders";
 import Portfolio from "./pages/Portfolio";
 import Submit from "./pages/Submit";
+import Terms from "./pages/Terms";
 
 const queryClient = new QueryClient();
 
@@ -61,12 +62,19 @@ const portfolioRoute = createRoute({
   component: Portfolio,
 });
 
+const termsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/terms",
+  component: Terms,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   submitRoute,
   ordersRoute,
   adminRoute,
   portfolioRoute,
+  termsRoute,
 ]);
 
 const router = createRouter({ routeTree });

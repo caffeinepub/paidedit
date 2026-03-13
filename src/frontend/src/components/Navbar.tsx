@@ -40,7 +40,7 @@ export default function Navbar() {
           data-ocid="nav.link"
         >
           <img
-            src="/assets/generated/paidedit-logo-transparent.dim_200x200.png"
+            src="/assets/uploads/WhatsApp-Image-2026-03-13-at-12.04.16-PM-1-1.jpeg"
             alt="PAIDEDIT"
             className="w-8 h-8 rounded-lg"
           />
@@ -89,6 +89,13 @@ export default function Navbar() {
               Admin
             </Link>
           )}
+          <Link
+            to="/terms"
+            className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            data-ocid="terms.link"
+          >
+            Terms
+          </Link>
         </nav>
 
         {/* Auth Button */}
@@ -181,6 +188,14 @@ export default function Navbar() {
               Admin
             </Link>
           )}
+          <Link
+            to="/terms"
+            className="block text-xs text-muted-foreground/60 hover:text-muted-foreground"
+            onClick={() => setMenuOpen(false)}
+            data-ocid="mobile.terms.link"
+          >
+            Terms &amp; Conditions
+          </Link>
           <Button
             onClick={() => {
               handleAuth();
