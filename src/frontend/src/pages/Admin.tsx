@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -28,30 +29,35 @@ import {
   Clock,
   Copy,
   Download,
+  Eye,
+  EyeOff,
   Loader2,
+  Lock,
+  LogIn,
   Mail,
   MessageCircle,
   Phone,
   Send,
-  ShieldX,
+  ShieldCheck,
   TrendingUp,
   Upload,
   Users,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Status } from "../backend";
 import StatusBadge from "../components/StatusBadge";
 import { loadConfig } from "../config";
 import { useFileUpload } from "../hooks/useFileUpload";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useGetAllOrders,
   useGetOrderStats,
-  useIsAdmin,
   useUpdateOrderStatus,
 } from "../hooks/useQueries";
+
+const ADMIN_MOBILE = "9053405019";
+const SESSION_KEY = "paidedit_admin_session";
 
 function formatDate(ns: bigint) {
   const ms = Number(ns / 1_000_000n);
@@ -63,9 +69,32 @@ function formatDate(ns: bigint) {
 }
 
 export default function Admin() {
-  const { identity } = useInternetIdentity();
-  const isAuthenticated = !!identity;
-  const { data: isAdmin, isLoading: checkingAdmin } = useIsAdmin();
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem(SESSION_KEY) === "true";
+  });
+  const [mobile, setMobile] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [showMobile, setShowMobile] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      localStorage.setItem(SESSION_KEY, "true");
+    } else {
+      localStorage.removeItem(SESSION_KEY);
+    }
+  }, [isAuthenticated]);
+
+  const handleLogin = () => {
+    const cleaned = mobile.replace(/\s+/g, "").trim();
+    if (cleaned === ADMIN_MOBILE) {
+      setIsAuthenticated(true);
+      setLoginError("");
+      toast.success("Admin login successful!");
+    } else {
+      setLoginError("Incorrect mobile number. Access denied.");
+    }
+  };
+
   const { data: stats, isLoading: statsLoading } = useGetOrderStats();
   const {
     data: orders,
@@ -138,49 +167,84 @@ export default function Admin() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
-        <Card className="card-glow max-w-md w-full bg-card border-border text-center">
-          <CardContent className="p-10">
-            <ShieldX className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <h2 className="font-display font-bold text-2xl mb-3">
-              Access Denied
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              You must be logged in to access the admin panel.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-sm"
+        >
+          <Card className="card-glow bg-card border-border">
+            <CardHeader className="text-center pb-2">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <ShieldCheck className="w-7 h-7 text-primary" />
+              </div>
+              <CardTitle className="font-display text-2xl">
+                Admin Login
+              </CardTitle>
+              <p className="text-muted-foreground text-sm mt-1">
+                Enter your mobile number to access the admin panel
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="admin-mobile-input"
+                  className="text-sm font-medium text-muted-foreground flex items-center gap-1.5"
+                >
+                  <Phone className="w-3.5 h-3.5" /> Mobile Number
+                </label>
+                <div className="relative">
+                  <Input
+                    type={showMobile ? "text" : "password"}
+                    placeholder="Enter mobile number"
+                    value={mobile}
+                    onChange={(e) => {
+                      setMobile(e.target.value);
+                      setLoginError("");
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                    className="bg-input border-border pr-10 text-center tracking-widest text-lg font-mono"
+                    maxLength={10}
+                    id="admin-mobile-input"
+                    data-ocid="admin.login.input"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setShowMobile(!showMobile)}
+                    data-ocid="admin.login.toggle"
+                  >
+                    {showMobile ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
 
-  if (checkingAdmin) {
-    return (
-      <div
-        className="min-h-[calc(100vh-4rem)] flex items-center justify-center"
-        data-ocid="admin.loading_state"
-      >
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+              {loginError && (
+                <div
+                  className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-lg px-3 py-2"
+                  data-ocid="admin.login.error_state"
+                >
+                  <Lock className="w-3.5 h-3.5 shrink-0" />
+                  {loginError}
+                </div>
+              )}
 
-  if (!isAdmin) {
-    return (
-      <div
-        className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4"
-        data-ocid="admin.error_state"
-      >
-        <Card className="card-glow max-w-md w-full bg-card border-destructive/40 text-center">
-          <CardContent className="p-10">
-            <ShieldX className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <h2 className="font-display font-bold text-2xl mb-3">
-              Access Denied
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              You do not have admin privileges to access this panel.
-            </p>
-          </CardContent>
-        </Card>
+              <Button
+                type="button"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                onClick={handleLogin}
+                disabled={mobile.length < 10}
+                data-ocid="admin.login.submit_button"
+              >
+                <LogIn className="w-4 h-4 mr-2" /> Login
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     );
   }
@@ -224,14 +288,29 @@ export default function Admin() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="mb-10"
+            className="mb-10 flex items-start justify-between"
           >
-            <h1 className="font-display font-bold text-4xl sm:text-5xl mb-2">
-              Admin <span className="gradient-text">Panel</span>
-            </h1>
-            <p className="text-muted-foreground">
-              Manage all video editing orders
-            </p>
+            <div>
+              <h1 className="font-display font-bold text-4xl sm:text-5xl mb-2">
+                Admin <span className="gradient-text">Panel</span>
+              </h1>
+              <p className="text-muted-foreground">
+                Manage all video editing orders
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-border text-muted-foreground hover:text-destructive hover:border-destructive/50 mt-1"
+              onClick={() => {
+                setIsAuthenticated(false);
+                setMobile("");
+              }}
+              data-ocid="admin.logout_button"
+            >
+              Logout
+            </Button>
           </motion.div>
 
           {/* Stats */}
@@ -290,7 +369,7 @@ export default function Admin() {
                   <p className="text-muted-foreground text-xs">
                     {ordersErrorMsg instanceof Error
                       ? ordersErrorMsg.message
-                      : "Please make sure you are logged in as admin."}
+                      : "Please check your connection and try again."}
                   </p>
                 </div>
               ) : !orders || orders.length === 0 ? (
@@ -580,6 +659,7 @@ export default function Admin() {
           </Card>
         </div>
       </div>
+
       <Dialog
         open={!!sendDialogOrder}
         onOpenChange={(open) => {
