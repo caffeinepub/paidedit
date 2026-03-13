@@ -1,0 +1,120 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Satoshi:wght@300;400;500;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+
+    /* Background & surface */
+    --background: 0.09 0.018 265;
+    --foreground: 0.95 0.008 265;
+
+    --card: 0.13 0.022 265;
+    --card-foreground: 0.95 0.008 265;
+
+    --popover: 0.13 0.022 265;
+    --popover-foreground: 0.95 0.008 265;
+
+    /* Primary – violet */
+    --primary: 0.65 0.22 295;
+    --primary-foreground: 0.98 0.005 265;
+
+    /* Secondary – dark surface */
+    --secondary: 0.18 0.025 270;
+    --secondary-foreground: 0.9 0.01 265;
+
+    /* Muted */
+    --muted: 0.18 0.02 265;
+    --muted-foreground: 0.55 0.018 265;
+
+    /* Accent – cyan */
+    --accent: 0.7 0.15 195;
+    --accent-foreground: 0.08 0.018 265;
+
+    /* Destructive – red */
+    --destructive: 0.6 0.2 25;
+    --destructive-foreground: 0.98 0.005 265;
+
+    /* Border / Input / Ring */
+    --border: 0.22 0.028 268;
+    --input: 0.18 0.022 268;
+    --ring: 0.65 0.22 295;
+
+    --radius: 0.75rem;
+
+    /* Charts */
+    --chart-1: 0.65 0.22 295;
+    --chart-2: 0.7 0.15 195;
+    --chart-3: 0.72 0.18 135;
+    --chart-4: 0.65 0.2 55;
+    --chart-5: 0.6 0.2 25;
+
+    /* Sidebar */
+    --sidebar: 0.11 0.02 265;
+    --sidebar-foreground: 0.9 0.008 265;
+    --sidebar-primary: 0.65 0.22 295;
+    --sidebar-primary-foreground: 0.98 0.005 265;
+    --sidebar-accent: 0.18 0.025 270;
+    --sidebar-accent-foreground: 0.9 0.01 265;
+    --sidebar-border: 0.22 0.028 268;
+    --sidebar-ring: 0.65 0.22 295;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Satoshi", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(
+      135deg,
+      oklch(0.65 0.22 295) 0%,
+      oklch(0.6 0.2 230) 50%,
+      oklch(0.7 0.15 195) 100%
+    );
+  }
+
+  .gradient-text {
+    background: linear-gradient(
+      135deg,
+      oklch(0.8 0.18 295) 0%,
+      oklch(0.72 0.2 230) 50%,
+      oklch(0.78 0.15 195) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .card-glow {
+    box-shadow: 0 0 0 1px oklch(0.22 0.028 268), 0 4px 24px -4px
+      oklch(0.65 0.22 295 / 0.12), 0 1px 3px oklch(0 0 0 / 0.4);
+  }
+
+  .hero-glow {
+    box-shadow: 0 0 80px 20px oklch(0.65 0.22 295 / 0.2);
+  }
+
+  .noise-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.04;
+  }
+}
