@@ -58,7 +58,7 @@ export default function Admin() {
       await updateStatus.mutateAsync({ orderId, status: newStatus });
       toast.success("Order status updated.");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to update";
+      const msg = err instanceof Error ? err.message : "Update failed";
       toast.error(msg);
     }
   };
@@ -105,7 +105,7 @@ export default function Admin() {
               Access Denied
             </h2>
             <p className="text-muted-foreground text-sm">
-              You don't have admin privileges to access this panel.
+              You do not have admin privileges to access this panel.
             </p>
           </CardContent>
         </Card>

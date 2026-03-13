@@ -13,6 +13,7 @@ import { InternetIdentityProvider } from "./hooks/useInternetIdentity";
 import Admin from "./pages/Admin";
 import Landing from "./pages/Landing";
 import Orders from "./pages/Orders";
+import Portfolio from "./pages/Portfolio";
 import Submit from "./pages/Submit";
 
 const queryClient = new QueryClient();
@@ -54,11 +55,18 @@ const adminRoute = createRoute({
   component: Admin,
 });
 
+const portfolioRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/portfolio",
+  component: Portfolio,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   submitRoute,
   ordersRoute,
   adminRoute,
+  portfolioRoute,
 ]);
 
 const router = createRouter({ routeTree });

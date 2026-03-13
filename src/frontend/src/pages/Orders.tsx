@@ -12,7 +12,6 @@ import {
   Video,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect } from "react";
 import StatusBadge from "../components/StatusBadge";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useGetMyOrders } from "../hooks/useQueries";
@@ -43,7 +42,7 @@ export default function Orders() {
               Login Required
             </h2>
             <p className="text-muted-foreground text-sm mb-8">
-              Log in to view your order history.
+              Please log in to view your order history.
             </p>
             <Button
               onClick={login}
@@ -118,7 +117,7 @@ export default function Orders() {
           >
             <CardContent className="p-8 text-center">
               <p className="text-destructive">
-                Failed to load orders. Please try again.
+                Could not load orders. Please try again.
               </p>
             </CardContent>
           </Card>

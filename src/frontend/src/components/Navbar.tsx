@@ -60,6 +60,13 @@ export default function Navbar() {
             Home
           </Link>
           <Link
+            to="/portfolio"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            data-ocid="portfolio.link"
+          >
+            Portfolio
+          </Link>
+          <Link
             to="/submit"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             data-ocid="submit.link"
@@ -139,6 +146,14 @@ export default function Navbar() {
             data-ocid="mobile.nav.link"
           >
             Home
+          </Link>
+          <Link
+            to="/portfolio"
+            className="block text-sm text-muted-foreground hover:text-foreground"
+            onClick={() => setMenuOpen(false)}
+            data-ocid="mobile.portfolio.link"
+          >
+            Portfolio
           </Link>
           <Link
             to="/submit"

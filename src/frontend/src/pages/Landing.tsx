@@ -16,7 +16,7 @@ import { motion } from "motion/react";
 const features = [
   {
     icon: Zap,
-    title: "Lightning Fast Delivery",
+    title: "Lightning-Fast Delivery",
     desc: "Get your edited video back within 24–48 hours. No waiting, no delays.",
     color: "text-yellow-400",
     bg: "bg-yellow-400/10",
@@ -24,7 +24,7 @@ const features = [
   {
     icon: Scissors,
     title: "Professional Editing",
-    desc: "Cuts, transitions, color grading, music sync — all handled by expert editors.",
+    desc: "Cuts, transitions, color grading, music sync — all done by expert editors.",
     color: "text-primary",
     bg: "bg-primary/10",
   },
@@ -38,38 +38,112 @@ const features = [
   {
     icon: Clock,
     title: "Real-Time Tracking",
-    desc: "Track your order status from submission to delivery, all in one dashboard.",
+    desc: "Track your order status from submission to delivery.",
     color: "text-green-400",
     bg: "bg-green-400/10",
   },
 ];
 
-const included = [
-  "Cuts & Trims",
-  "Transitions",
-  "Color Grading",
-  "Background Music",
-  "Text & Captions",
-  "Export in HD",
+const plans = [
+  {
+    id: 1,
+    badge: "Basic",
+    name: "Instagram Reel",
+    subtitle: "Instagram 15 seconds",
+    price: 49,
+    unit: "per video",
+    featured: false,
+    features: [
+      "15-second video",
+      "Optimised for Instagram",
+      "Cuts & trims",
+      "Music addition",
+      "Captions",
+    ],
+  },
+  {
+    id: 2,
+    badge: "Most Popular",
+    name: "High Quality Video",
+    subtitle: "Full HD Editing",
+    price: 99,
+    unit: "per video",
+    featured: true,
+    features: [
+      "Full HD quality",
+      "Color grading",
+      "Transition effects",
+      "Background music",
+      "Text overlay",
+      "HD export",
+    ],
+  },
+  {
+    id: 3,
+    badge: "New",
+    name: "5 Minute Video",
+    subtitle: "Up to 5 minutes",
+    price: 149,
+    unit: "per video",
+    featured: false,
+    features: [
+      "Up to 5 minutes",
+      "Full HD quality",
+      "Transitions",
+      "Background music",
+      "Text overlay",
+      "HD export",
+    ],
+  },
+  {
+    id: 4,
+    badge: "Package",
+    name: "1 Month Package",
+    subtitle: "Unlimited Videos",
+    price: 149,
+    unit: "per month",
+    featured: false,
+    features: [
+      "Unlimited videos",
+      "All high-quality features",
+      "Priority delivery",
+      "24/7 support",
+    ],
+  },
+  {
+    id: 5,
+    badge: "Best Deal",
+    name: "3 Month Package",
+    subtitle: "Best Value Bundle",
+    price: 499,
+    unit: "3 months",
+    featured: false,
+    features: [
+      "Everything in 1 Month",
+      "Save ₹148",
+      "Priority support",
+      "Dedicated editor",
+    ],
+  },
 ];
 
 const testimonials = [
   {
     name: "Priya Sharma",
     role: "Content Creator",
-    text: "PAIDEDIT transformed my raw footage into polished content in just a day. Absolutely worth every rupee!",
+    text: "PAIDEDIT turned my raw footage into polished content in a single day. Every rupee is worth it!",
     stars: 5,
   },
   {
     name: "Rohit Mehta",
     role: "Wedding Videographer",
-    text: "The editing quality is exceptional. My clients love the highlight reels — smooth, cinematic, professional.",
+    text: "The editing quality is outstanding. My clients love the highlight reels.",
     stars: 5,
   },
   {
     name: "Ananya Gupta",
     role: "Instagram Influencer",
-    text: "100 Rs per video is unbelievably affordable. The quick turnaround keeps my feed fresh and consistent.",
+    text: "Instagram Reel editing for just ₹49 — incredibly affordable!",
     stars: 5,
   },
 ];
@@ -107,7 +181,7 @@ export default function Landing() {
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-medium mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-glow" />
-              Starting at just ₹100 per video
+              Starting from just ₹49 per video
             </div>
 
             <h1 className="font-display font-extrabold text-6xl sm:text-7xl md:text-8xl lg:text-9xl leading-none tracking-tight mb-6">
@@ -171,7 +245,7 @@ export default function Landing() {
           className="text-center mb-16"
         >
           <h2 className="font-display font-bold text-4xl sm:text-5xl mb-4">
-            Why choose <span className="gradient-text">PAIDEDIT</span>?
+            Why Choose <span className="gradient-text">PAIDEDIT</span>?
           </h2>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto">
             We make professional video editing accessible to everyone.
@@ -218,63 +292,25 @@ export default function Landing() {
             className="text-center mb-16"
           >
             <h2 className="font-display font-bold text-4xl sm:text-5xl mb-4">
-              Simple, <span className="gradient-text">transparent</span> pricing
+              Simple, <span className="gradient-text">Transparent</span> Pricing
             </h2>
             <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-              One price. Everything included. No surprises.
+              Choose the plan that suits your needs. No hidden charges.
             </p>
           </motion.div>
 
-          <div className="max-w-md mx-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <Card className="card-glow bg-card border-primary/30 relative overflow-hidden">
-                {/* Glow bg */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none" />
-
-                <CardContent className="p-8 relative">
-                  <div className="text-center mb-8">
-                    <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold mb-4">
-                      Most Popular
-                    </div>
-                    <h3 className="font-display font-bold text-2xl mb-2">
-                      Short Video Edit
-                    </h3>
-                    <div className="flex items-end justify-center gap-1 mb-2">
-                      <IndianRupee className="w-8 h-8 text-primary mb-1" />
-                      <span className="font-display font-extrabold text-7xl gradient-text">
-                        100
-                      </span>
-                    </div>
-                    <p className="text-muted-foreground text-sm">per video</p>
-                  </div>
-
-                  <ul className="space-y-3 mb-8">
-                    {included.map((item) => (
-                      <li
-                        key={item}
-                        className="flex items-center gap-3 text-sm"
-                      >
-                        <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />
-                        <span className="text-foreground">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Button
-                    asChild
-                    className="w-full gradient-primary border-0 text-white font-semibold h-12 hover:opacity-90 transition-opacity"
-                    data-ocid="pricing.primary_button"
-                  >
-                    <Link to="/submit">Get Started Now</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
+          {/* 5 cards: 3 on top row, 2 centered on bottom */}
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {plans.slice(0, 3).map((plan, i) => (
+                <PricingCard key={plan.id} plan={plan} index={i} />
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:max-w-2xl md:mx-auto">
+              {plans.slice(3).map((plan, i) => (
+                <PricingCard key={plan.id} plan={plan} index={i + 3} />
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -292,7 +328,7 @@ export default function Landing() {
           className="text-center mb-16"
         >
           <h2 className="font-display font-bold text-4xl sm:text-5xl mb-4">
-            Loved by <span className="gradient-text">creators</span>
+            Loved by <span className="gradient-text">Creators</span>
           </h2>
         </motion.div>
 
@@ -343,7 +379,7 @@ export default function Landing() {
             viewport={{ once: true }}
           >
             <h2 className="font-display font-extrabold text-4xl sm:text-6xl mb-6">
-              Ready to go <span className="gradient-text">viral</span>?
+              Ready to Go <span className="gradient-text">Viral</span>?
             </h2>
             <p className="text-muted-foreground text-lg mb-10 max-w-lg mx-auto">
               Submit your raw footage today and receive a professionally edited
@@ -363,5 +399,115 @@ export default function Landing() {
         </div>
       </section>
     </div>
+  );
+}
+
+type Plan = (typeof plans)[number];
+
+function PricingCard({ plan, index }: { plan: Plan; index: number }) {
+  return (
+    <motion.div
+      data-ocid={`pricing.plan.item.${plan.id}`}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+      viewport={{ once: true }}
+      className="relative"
+    >
+      <Card
+        className={`card-glow h-full bg-card relative overflow-hidden transition-all duration-300 ${
+          plan.featured
+            ? "border-primary/60 shadow-lg shadow-primary/20 scale-105"
+            : plan.badge === "Best Deal"
+              ? "border-amber-500/50 shadow-lg shadow-amber-500/10"
+              : "border-border hover:border-primary/40"
+        }`}
+      >
+        {plan.featured && (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 pointer-events-none" />
+        )}
+        {plan.badge === "Best Deal" && (
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-orange-500/5 pointer-events-none" />
+        )}
+
+        <CardContent className="p-6 relative flex flex-col h-full">
+          {/* Badge */}
+          <div className="mb-4">
+            <span
+              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                plan.featured
+                  ? "bg-primary/20 text-primary"
+                  : plan.badge === "Best Deal"
+                    ? "bg-amber-500/20 text-amber-300"
+                    : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {plan.badge}
+            </span>
+          </div>
+
+          {/* Name */}
+          <h3 className="font-display font-bold text-xl mb-1">{plan.name}</h3>
+          <p className="text-muted-foreground text-xs mb-4">{plan.subtitle}</p>
+
+          {/* Price */}
+          <div className="flex items-end gap-1 mb-1">
+            <IndianRupee
+              className={`w-6 h-6 mb-1 ${
+                plan.featured
+                  ? "text-primary"
+                  : plan.badge === "Best Deal"
+                    ? "text-amber-400"
+                    : "text-foreground"
+              }`}
+            />
+            <span
+              className={`font-display font-extrabold text-5xl leading-none ${
+                plan.featured
+                  ? "gradient-text"
+                  : plan.badge === "Best Deal"
+                    ? "text-amber-300"
+                    : "text-foreground"
+              }`}
+            >
+              {plan.price}
+            </span>
+          </div>
+          <p className="text-muted-foreground text-xs mb-6">{plan.unit}</p>
+
+          {/* Features */}
+          <ul className="space-y-2.5 mb-8 flex-1">
+            {plan.features.map((feat) => (
+              <li key={feat} className="flex items-center gap-2.5 text-sm">
+                <CheckCircle2
+                  className={`w-4 h-4 shrink-0 ${
+                    plan.featured
+                      ? "text-primary"
+                      : plan.badge === "Best Deal"
+                        ? "text-amber-400"
+                        : "text-accent"
+                  }`}
+                />
+                <span className="text-foreground">{feat}</span>
+              </li>
+            ))}
+          </ul>
+
+          <Button
+            asChild
+            className={`w-full font-semibold h-11 transition-opacity ${
+              plan.featured
+                ? "gradient-primary border-0 text-white hover:opacity-90"
+                : plan.badge === "Best Deal"
+                  ? "bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30"
+                  : "bg-card border border-border hover:border-primary/50 hover:bg-primary/5 text-foreground"
+            }`}
+            data-ocid="pricing.primary_button"
+          >
+            <Link to="/submit">Get Started</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
