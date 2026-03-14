@@ -241,8 +241,8 @@ export default function Orders() {
                         </div>
                         <div className="mb-1.5">
                           {approvedOrders.has(order.id.toString()) ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/30">
-                              💰 Payment Verified ✅
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-black bg-green-500/20 text-green-300 border border-green-500/50 shadow-sm shadow-green-500/20">
+                              ✅ Payment Successful
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">

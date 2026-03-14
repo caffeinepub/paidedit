@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -114,7 +114,7 @@ function loadPaymentStatus(orderId: bigint): "Paid" | "Unpaid" {
   return val === "Paid" ? "Paid" : "Unpaid";
 }
 
-function formatDate(ns: bigint) {
+function _formatDate(ns: bigint) {
   const ms = Number(ns / 1_000_000n);
   return new Date(ms).toLocaleDateString("en-IN", {
     day: "numeric",
@@ -213,10 +213,10 @@ export default function Admin() {
   const [otpInput, setOtpInput] = useState("");
   const [otpExpiry, setOtpExpiry] = useState<number | null>(null);
   const [otpError, setOtpError] = useState("");
-  const [paymentStatuses, setPaymentStatuses] = useState<
+  const [_paymentStatuses, setPaymentStatuses] = useState<
     Record<string, "Paid" | "Unpaid">
   >({});
-  const [approvedPayments, setApprovedPayments] = useState<Set<string>>(
+  const [_approvedPayments, setApprovedPayments] = useState<Set<string>>(
     new Set(),
   );
   const [approvingPayment, setApprovingPayment] = useState<string | null>(null);
@@ -228,7 +228,7 @@ export default function Admin() {
     useState<NotificationPermission>(() =>
       "Notification" in window ? Notification.permission : "denied",
     );
-  const [activeTab, setActiveTab] = useState("orders");
+  const [_activeTab, _setActiveTab] = useState("orders");
 
   // Track previous order count for new-order detection
   const prevOrderCountRef = useRef<number | null>(null);
@@ -294,9 +294,9 @@ export default function Admin() {
   const { data: stats, isLoading: _statsLoading } = useGetOrderStats();
   const {
     data: orders,
-    isLoading: ordersLoading,
-    isError: ordersError,
-    error: ordersErrorMsg,
+    isLoading: _ordersLoading,
+    isError: _ordersError,
+    error: _ordersErrorMsg,
   } = useGetAllOrders();
   const { data: customers } = useQuery({
     queryKey: ["allCustomers"],
@@ -314,7 +314,7 @@ export default function Admin() {
     },
     enabled: !!actor && isAuthenticated,
   });
-  const customerIdMap = (customers ?? []).reduce<Record<string, string>>(
+  const _customerIdMap = (customers ?? []).reduce<Record<string, string>>(
     (acc, c) => {
       acc[c.principal.toString()] = c.customerId;
       return acc;
@@ -333,12 +333,12 @@ export default function Admin() {
 
   // ---- Support Chat State ----
   const [customerChats, setCustomerChats] = useState<CustomerChat[]>([]);
-  const [activeChatSession, setActiveChatSession] = useState<string | null>(
+  const [activeChatSession, _setActiveChatSession] = useState<string | null>(
     null,
   );
   const [adminReplyText, setAdminReplyText] = useState("");
   const [replySending, setReplySending] = useState(false);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const _chatBottomRef = useRef<HTMLDivElement>(null);
   const editedVideoInputRef = useRef<HTMLInputElement>(null);
 
   const BANNED_WORDS_ADMIN = [
@@ -353,10 +353,10 @@ export default function Admin() {
     "harami",
   ];
 
-  const [chatLoadError, setChatLoadError] = useState<string | null>(null);
+  const [_chatLoadError, setChatLoadError] = useState<string | null>(null);
   const [_chatRetrying, setChatRetrying] = useState(false);
-  const [chatConnected, setChatConnected] = useState(false);
-  const [cancelledPayments, setCancelledPayments] = useState<
+  const [_chatConnected, setChatConnected] = useState(false);
+  const [_cancelledPayments, setCancelledPayments] = useState<
     Array<{
       orderId: string;
       customerName: string;
@@ -434,7 +434,7 @@ export default function Admin() {
     return () => clearInterval(t);
   }, [refreshChats, isAuthenticated, actor, isIcLoggedIn]);
 
-  const handleAdminReply = async () => {
+  const _handleAdminReply = async () => {
     const trimmed = adminReplyText.trim();
     if (!activeChatSession || !trimmed || !actor || replySending) return;
     const lower = trimmed.toLowerCase();
@@ -461,7 +461,7 @@ export default function Admin() {
     }
   };
 
-  const sessionIds = customerChats.map((c) => c.customer.toString());
+  const _sessionIds = customerChats.map((c) => c.customer.toString());
   const {
     uploadFile: uploadEditedVideo,
     uploadProgress: editedUploadProgress,
@@ -542,7 +542,7 @@ export default function Admin() {
     loadApprovals();
   }, [orders, actor, isIcLoggedIn]);
 
-  const togglePaymentStatus = useCallback((orderId: bigint) => {
+  const _togglePaymentStatus = useCallback((orderId: bigint) => {
     const key = orderId.toString();
     setPaymentStatuses((prev) => {
       const next = prev[key] === "Paid" ? "Unpaid" : "Paid";
@@ -590,7 +590,7 @@ export default function Admin() {
     clearEditedUploadError();
   };
 
-  const handleStatusChange = async (orderId: bigint, newStatus: Status) => {
+  const _handleStatusChange = async (orderId: bigint, newStatus: Status) => {
     try {
       await updateStatus.mutateAsync({ orderId, status: newStatus });
       toast.success("Order status updated.");
@@ -600,7 +600,7 @@ export default function Admin() {
     }
   };
 
-  const handleDownload = async (
+  const _handleDownload = async (
     videoFileId: string,
     _videoFileName: string,
   ) => {
@@ -1097,591 +1097,9 @@ export default function Admin() {
             </p>
           </motion.div>
 
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <TabsList className="mb-6 bg-muted/30 border border-border">
-              <TabsTrigger
-                value="orders"
-                className="font-bold gap-1.5"
-                data-ocid="admin.orders.tab"
-              >
-                <ClipboardList className="w-3.5 h-3.5" /> Orders
-              </TabsTrigger>
-              <TabsTrigger
-                value="plans"
-                className="font-bold gap-1.5"
-                data-ocid="admin.plans.tab"
-              >
-                <BarChart3 className="w-3.5 h-3.5" /> Plans
-              </TabsTrigger>
-              <TabsTrigger
-                value="stats"
-                className="font-bold gap-1.5"
-                data-ocid="admin.stats.tab"
-              >
-                <TrendingUp className="w-3.5 h-3.5" /> Stats
-              </TabsTrigger>
-              <TabsTrigger
-                value="payments"
-                className="font-bold gap-1.5"
-                data-ocid="admin.payments.tab"
-              >
-                <CreditCard className="w-3.5 h-3.5" /> Payments
-              </TabsTrigger>
-              <TabsTrigger
-                value="cancelled"
-                className="font-bold gap-1.5 text-destructive data-[state=active]:text-destructive"
-                data-ocid="admin.cancelled.tab"
-              >
-                ❌ Cancelled{" "}
-                {cancelledPayments.length > 0 && (
-                  <span className="ml-1 bg-destructive text-destructive-foreground text-xs rounded-full px-1.5 py-0.5">
-                    {cancelledPayments.length}
-                  </span>
-                )}
-              </TabsTrigger>
-            </TabsList>
-
-            {/* ===== ORDERS TAB ===== */}
-            <TabsContent value="orders">
-              <Card
-                className="card-glow bg-card border-border"
-                data-ocid="admin.table"
-              >
-                <CardHeader>
-                  <CardTitle className="font-display text-2xl">
-                    All Orders
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {ordersLoading ? (
-                    <div
-                      className="p-6 space-y-3"
-                      data-ocid="admin.loading_state"
-                    >
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <Skeleton key={i} className="h-12 w-full" />
-                      ))}
-                    </div>
-                  ) : ordersError ? (
-                    <div
-                      className="p-12 text-center"
-                      data-ocid="admin.error_state"
-                    >
-                      <p className="text-destructive text-sm font-medium mb-2">
-                        Could not load orders.
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        {ordersErrorMsg instanceof Error
-                          ? ordersErrorMsg.message
-                          : "Please check your connection and try again."}
-                      </p>
-                    </div>
-                  ) : !orders || orders.length === 0 ? (
-                    <div
-                      className="p-12 text-center"
-                      data-ocid="admin.empty_state"
-                    >
-                      <p className="text-muted-foreground font-bold">
-                        No orders yet. Orders from customers will appear here.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-border hover:bg-transparent">
-                            <TableHead className="text-muted-foreground text-xs font-medium">
-                              ID
-                            </TableHead>
-                            <TableHead className="text-muted-foreground text-xs font-medium">
-                              Customer
-                            </TableHead>
-                            <TableHead className="text-muted-foreground text-xs font-medium hidden sm:table-cell">
-                              Email
-                            </TableHead>
-                            <TableHead className="text-muted-foreground text-xs font-medium">
-                              Video
-                            </TableHead>
-                            <TableHead className="text-muted-foreground text-xs font-medium hidden lg:table-cell">
-                              Description
-                            </TableHead>
-                            <TableHead className="text-muted-foreground text-xs font-medium">
-                              Status
-                            </TableHead>
-                            <TableHead className="text-muted-foreground text-xs font-medium hidden sm:table-cell">
-                              Payment
-                            </TableHead>
-                            <TableHead className="text-muted-foreground text-xs font-medium hidden sm:table-cell">
-                              Pay Status
-                            </TableHead>
-                            <TableHead className="text-muted-foreground text-xs font-medium hidden sm:table-cell">
-                              Date
-                            </TableHead>
-                            <TableHead className="text-muted-foreground text-xs font-medium hidden sm:table-cell">
-                              Approve
-                            </TableHead>
-                            <TableHead className="text-muted-foreground text-xs font-medium">
-                              Update
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {orders.map((order, idx) => {
-                            const payStatus =
-                              paymentStatuses[order.id.toString()] ?? "Unpaid";
-                            const isPaid = payStatus === "Paid";
-                            const isPremiumOrder =
-                              order.description?.includes("\u20b9499") ||
-                              order.description?.includes("\u20b9999");
-                            const isPayApproved = approvedPayments.has(
-                              order.id.toString(),
-                            );
-                            return (
-                              <TableRow
-                                key={order.id.toString()}
-                                className="border-border hover:bg-muted/10"
-                                data-ocid={`admin.row.${idx + 1}`}
-                              >
-                                <TableCell className="text-xs text-muted-foreground font-mono">
-                                  #{order.id.toString()}
-                                </TableCell>
-                                <TableCell className="text-sm font-medium max-w-[160px]">
-                                  <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="truncate max-w-[90px] font-bold">
-                                        {order.contactName}
-                                      </span>
-                                      {isPremiumOrder && (
-                                        <span
-                                          title="Premium Member"
-                                          style={{
-                                            filter:
-                                              "drop-shadow(0 0 4px #a855f7)",
-                                            fontSize: "14px",
-                                          }}
-                                        >
-                                          💎
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 w-fit">
-                                      {customerIdMap[
-                                        order.userId?.toString() ?? ""
-                                      ] ?? "PAID-????"}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground hidden sm:table-cell max-w-[140px] truncate">
-                                  {order.contactEmail}
-                                </TableCell>
-                                <TableCell className="text-xs max-w-[140px]">
-                                  <div className="flex items-center gap-2">
-                                    <span className="truncate max-w-[90px]">
-                                      {order.videoFileName}
-                                    </span>
-                                    {order.videoFileId && (
-                                      <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-6 w-6 p-0 shrink-0 text-muted-foreground hover:text-primary"
-                                        onClick={() =>
-                                          handleDownload(
-                                            order.videoFileId,
-                                            order.videoFileName,
-                                          )
-                                        }
-                                        title="Download video"
-                                        data-ocid="admin.download_button"
-                                      >
-                                        <Download className="w-3.5 h-3.5" />
-                                      </Button>
-                                    )}
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-6 w-6 p-0 shrink-0 text-green-500 hover:text-green-400"
-                                      onClick={() =>
-                                        setSendDialogOrder({
-                                          id: order.id,
-                                          name: order.contactName,
-                                          email: order.contactEmail,
-                                        })
-                                      }
-                                      title="Send edited video to customer"
-                                      data-ocid="admin.send_button"
-                                    >
-                                      <Send className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground hidden lg:table-cell max-w-[180px]">
-                                  <p className="line-clamp-2">
-                                    {order.description}
-                                  </p>
-                                </TableCell>
-                                <TableCell>
-                                  <StatusBadge status={order.status} />
-                                </TableCell>
-                                <TableCell className="text-xs font-semibold text-green-400 hidden sm:table-cell whitespace-nowrap">
-                                  ₹{Number(order.price).toLocaleString("en-IN")}
-                                </TableCell>
-                                {/* Pay Status Toggle */}
-                                <TableCell className="hidden sm:table-cell">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      togglePaymentStatus(order.id)
-                                    }
-                                    data-ocid={`admin.payment_status_toggle.${idx + 1}`}
-                                    className={[
-                                      "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer border",
-                                      isPaid
-                                        ? "bg-green-500/15 text-green-400 border-green-500/30 hover:bg-green-500/25"
-                                        : "bg-orange-500/15 text-orange-400 border-orange-500/30 hover:bg-orange-500/25",
-                                    ].join(" ")}
-                                    title={`Mark as ${isPaid ? "Unpaid" : "Paid"}`}
-                                  >
-                                    {isPaid ? (
-                                      <CheckCircle2 className="w-3 h-3" />
-                                    ) : (
-                                      <XCircle className="w-3 h-3" />
-                                    )}
-                                    {payStatus}
-                                  </button>
-                                </TableCell>
-                                <TableCell className="text-xs text-muted-foreground hidden sm:table-cell whitespace-nowrap">
-                                  {formatDate(order.createdAt)}
-                                </TableCell>
-                                <TableCell className="hidden sm:table-cell">
-                                  {isPayApproved ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-500/15 text-green-400 border border-green-500/30">
-                                      ✅ Approved
-                                    </span>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      disabled={
-                                        approvingPayment === order.id.toString()
-                                      }
-                                      onClick={async () => {
-                                        if (!actor || !isIcLoggedIn) {
-                                          toast.error(
-                                            "Connect IC Identity first to approve payments.",
-                                          );
-                                          return;
-                                        }
-                                        const idStr = order.id.toString();
-                                        setApprovingPayment(idStr);
-                                        try {
-                                          await (
-                                            actor as unknown as FullBackend
-                                          ).approvePayment(order.id);
-                                          setApprovedPayments((prev) => {
-                                            const next = new Set(prev);
-                                            next.add(idStr);
-                                            return next;
-                                          });
-                                          // Also sync localStorage Paid status
-                                          setPaymentStatuses((prev) => ({
-                                            ...prev,
-                                            [idStr]: "Paid",
-                                          }));
-                                          localStorage.setItem(
-                                            `paidedit_payment_status_${order.id}`,
-                                            "Paid",
-                                          );
-                                          toast.success(
-                                            `Payment approved for ${order.contactName}!`,
-                                          );
-                                        } catch {
-                                          toast.error(
-                                            "Failed to approve payment. Try again.",
-                                          );
-                                        } finally {
-                                          setApprovingPayment(null);
-                                        }
-                                      }}
-                                      data-ocid={`admin.approve_button.${idx + 1}`}
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer border bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 transition-all disabled:opacity-60"
-                                    >
-                                      {approvingPayment ===
-                                      order.id.toString() ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                      ) : null}
-                                      Approve
-                                    </button>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  <Select
-                                    value={order.status as string}
-                                    onValueChange={(val) => {
-                                      handleStatusChange(
-                                        order.id,
-                                        val as Status,
-                                      );
-                                    }}
-                                  >
-                                    <SelectTrigger
-                                      className="w-32 h-7 text-xs border-border bg-muted/30"
-                                      data-ocid={`admin.status_select.${idx + 1}`}
-                                    >
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-card border-border">
-                                      <SelectItem
-                                        value="Pending"
-                                        className="text-xs font-bold"
-                                      >
-                                        Pending
-                                      </SelectItem>
-                                      <SelectItem
-                                        value="InProgress"
-                                        className="text-xs font-bold"
-                                      >
-                                        In Progress
-                                      </SelectItem>
-                                      <SelectItem
-                                        value="Completed"
-                                        className="text-xs font-bold"
-                                      >
-                                        Completed
-                                      </SelectItem>
-                                      <SelectItem
-                                        value="Cancelled"
-                                        className="text-xs font-bold"
-                                      >
-                                        Cancelled
-                                      </SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Live Support Chat */}
-              <Card
-                className="card-glow bg-card border-border mt-8"
-                data-ocid="admin.chat.panel"
-              >
-                <CardHeader>
-                  <CardTitle className="font-display text-2xl flex items-center gap-2">
-                    <MessageCircle className="w-6 h-6 text-violet-400" />
-                    Live Support Chat
-                    {sessionIds.length > 0 && (
-                      <span className="ml-2 text-xs font-bold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
-                        {sessionIds.length} conversation
-                        {sessionIds.length !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                    <span className="ml-auto flex items-center gap-1.5 text-xs font-bold">
-                      <CircleDot
-                        className={`w-3 h-3 ${chatConnected ? "text-green-400" : isIcLoggedIn ? "text-yellow-400" : "text-muted-foreground"}`}
-                      />
-                      <span
-                        className={
-                          chatConnected
-                            ? "text-green-400"
-                            : isIcLoggedIn
-                              ? "text-yellow-400"
-                              : "text-muted-foreground"
-                        }
-                      >
-                        {chatConnected
-                          ? "Connected"
-                          : isIcLoggedIn
-                            ? "Reconnecting..."
-                            : "Not Connected"}
-                      </span>
-                    </span>
-                  </CardTitle>
-                  {!isIcLoggedIn ? (
-                    <div
-                      className="flex items-center gap-2 text-orange-400 text-xs bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 font-bold mt-2"
-                      data-ocid="admin.chat.loading_state"
-                    >
-                      <Shield className="w-3.5 h-3.5 shrink-0" />
-                      Connect IC Identity (Step 2 above) to view customer chats.
-                    </div>
-                  ) : chatLoadError ? (
-                    <div
-                      className="flex items-center gap-2 text-yellow-400 text-xs bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2 font-bold mt-2"
-                      data-ocid="admin.chat.error_state"
-                    >
-                      <XCircle className="w-3.5 h-3.5 shrink-0" />
-                      {chatLoadError}
-                      <button
-                        onClick={refreshChats}
-                        className="ml-auto text-xs underline hover:no-underline font-bold"
-                        type="button"
-                        data-ocid="admin.chat.button"
-                      >
-                        Retry
-                      </button>
-                    </div>
-                  ) : null}
-                </CardHeader>
-                <CardContent>
-                  {sessionIds.length === 0 ? (
-                    <div
-                      className="text-center py-12"
-                      data-ocid="admin.chat.empty_state"
-                    >
-                      <p className="text-4xl mb-3">💬</p>
-                      <p className="text-muted-foreground font-bold">
-                        No customer messages yet
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        When customers send a message via the chat widget, it
-                        will appear here.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex gap-4 h-96">
-                      {/* Conversation list */}
-                      <div className="w-52 shrink-0 border border-border/50 rounded-xl overflow-hidden flex flex-col">
-                        <p className="text-xs font-bold text-muted-foreground px-3 py-2 bg-muted/20 border-b border-border/50">
-                          Customers
-                        </p>
-                        <div className="flex-1 overflow-y-auto">
-                          {customerChats.map((cc, idx) => {
-                            const sid = cc.customer.toString();
-                            const msgs = cc.messages;
-                            const last = msgs[msgs.length - 1];
-                            const unread = msgs.some((m) => !m.fromAdmin);
-                            return (
-                              <button
-                                key={sid}
-                                type="button"
-                                onClick={() => setActiveChatSession(sid)}
-                                className={`w-full text-left px-3 py-2.5 border-b border-border/30 hover:bg-muted/30 transition-colors ${activeChatSession === sid ? "bg-violet-500/15 border-l-2 border-l-violet-500" : ""}`}
-                                data-ocid={`admin.chat.item.${idx + 1}`}
-                              >
-                                <p className="text-xs font-bold text-foreground truncate">
-                                  {unread && (
-                                    <span className="inline-block w-2 h-2 rounded-full bg-violet-400 mr-1.5 shrink-0" />
-                                  )}
-                                  User {sid.slice(0, 16)}...
-                                </p>
-                                {last && (
-                                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                                    {last.fromAdmin ? "You: " : ""}
-                                    {last.text}
-                                  </p>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Message area */}
-                      <div className="flex-1 border border-border/50 rounded-xl flex flex-col overflow-hidden">
-                        {!activeChatSession ? (
-                          <div className="flex-1 flex items-center justify-center">
-                            <p className="text-sm text-muted-foreground font-bold">
-                              ← Select a conversation
-                            </p>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="px-3 py-2 bg-violet-500/10 border-b border-violet-500/20 flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-sm">
-                                👤
-                              </div>
-                              <p className="text-xs font-bold text-violet-300">
-                                User {activeChatSession.slice(0, 16)}...
-                              </p>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                              {(
-                                customerChats.find(
-                                  (c) =>
-                                    c.customer.toString() === activeChatSession,
-                                )?.messages ?? []
-                              ).map((msg) => (
-                                <div
-                                  key={msg.id.toString()}
-                                  className={`flex ${msg.fromAdmin ? "justify-end" : "justify-start"}`}
-                                >
-                                  <div
-                                    className={`max-w-[75%] rounded-xl px-3 py-2 ${
-                                      msg.fromAdmin
-                                        ? "bg-violet-600/70 text-white rounded-tr-sm"
-                                        : "bg-muted/50 border border-border/50 text-foreground rounded-tl-sm"
-                                    }`}
-                                  >
-                                    {!msg.fromAdmin && (
-                                      <p className="text-[10px] font-bold text-violet-400 mb-0.5">
-                                        Customer
-                                      </p>
-                                    )}
-                                    <p className="text-xs font-bold leading-snug">
-                                      {msg.text}
-                                    </p>
-                                    <p className="text-[10px] mt-0.5 opacity-60">
-                                      {new Date(
-                                        Number(msg.timestamp / 1_000_000n),
-                                      ).toLocaleTimeString("en-IN", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
-                              <div ref={chatBottomRef} />
-                            </div>
-                            <div className="p-3 border-t border-border/50 flex gap-2">
-                              <input
-                                type="text"
-                                value={adminReplyText}
-                                onChange={(e) =>
-                                  setAdminReplyText(e.target.value)
-                                }
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") handleAdminReply();
-                                }}
-                                placeholder="Type a reply..."
-                                className="flex-1 bg-input border border-border rounded-lg px-3 py-1.5 text-sm font-bold text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-violet-500/50"
-                                data-ocid="admin.chat.input"
-                              />
-                              <Button
-                                type="button"
-                                onClick={handleAdminReply}
-                                disabled={
-                                  !adminReplyText.trim() || replySending
-                                }
-                                className="bg-violet-600 hover:bg-violet-500 text-white font-bold px-3"
-                                data-ocid="admin.chat.submit_button"
-                              >
-                                <Send className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
+          <div className="w-full">
             {/* ===== PAYMENTS TAB ===== */}
-            <TabsContent value="payments">
+            <div>
               <div className="space-y-6">
                 {/* Backend Payment Statuses - Live from IC */}
                 <Card
@@ -1852,7 +1270,7 @@ export default function Admin() {
                                       {isApproved ? (
                                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/30">
                                           <CheckCircle2 className="w-3 h-3" />{" "}
-                                          Approved
+                                          ✅ Payment Successful
                                         </span>
                                       ) : isCancelled ? (
                                         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-red-500/15 text-red-400 border border-red-500/30">
@@ -1922,7 +1340,7 @@ export default function Admin() {
                                             {approvingPayment === idStr ? (
                                               <Loader2 className="w-3 h-3 animate-spin" />
                                             ) : null}
-                                            Approve ✅
+                                            Mark Successful ✅
                                           </button>
                                           <button
                                             type="button"
@@ -1982,269 +1400,8 @@ export default function Admin() {
                   </CardContent>
                 </Card>
               </div>
-            </TabsContent>
-
-            <TabsContent value="plans">
-              <div className="space-y-4">
-                <Card className="card-glow bg-card border-border">
-                  <CardHeader>
-                    <CardTitle className="font-display text-2xl">
-                      Plan Overview
-                    </CardTitle>
-                    <p className="text-muted-foreground font-bold text-sm">
-                      Current pricing and plan structure
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {[
-                        {
-                          name: "Free Fire Video Edit",
-                          price: 50,
-                          videos: "1 video",
-                          validity: "Single edit",
-                          badge: "🎮",
-                        },
-                        {
-                          name: "High Quality Video",
-                          price: 99,
-                          videos: "4 videos/day",
-                          validity: "1 day",
-                          badge: "📹",
-                        },
-                        {
-                          name: "15 Day Premium",
-                          price: 149,
-                          videos: "2 videos/day",
-                          validity: "15 days",
-                          badge: "💎",
-                          premium: true,
-                        },
-                        {
-                          name: "Free Fire 15 Day Package",
-                          price: 499,
-                          videos: "2 videos/day",
-                          validity: "15 days",
-                          badge: "🔥",
-                          premium: true,
-                        },
-                        {
-                          name: "Free Fire 1 Month",
-                          price: 999,
-                          videos: "2 videos/day",
-                          validity: "1 month",
-                          badge: "👑",
-                          premium: true,
-                        },
-                      ].map((plan) => (
-                        <Card
-                          key={plan.name}
-                          className={`border ${plan.premium ? "border-violet-500/40 bg-violet-500/5" : "border-border bg-muted/20"}`}
-                        >
-                          <CardContent className="pt-4 pb-4">
-                            <div className="flex items-start justify-between mb-2">
-                              <span className="text-2xl">{plan.badge}</span>
-                              {plan.premium && (
-                                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
-                                  Premium
-                                </span>
-                              )}
-                            </div>
-                            <p className="font-black text-foreground text-sm">
-                              {plan.name}
-                            </p>
-                            <p className="text-2xl font-black text-primary mt-1">
-                              ₹{plan.price}
-                            </p>
-                            <p className="text-xs text-muted-foreground font-bold mt-1">
-                              {plan.videos} • {plan.validity}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="stats">
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {[
-                    {
-                      label: "Total Orders",
-                      value: orders?.length ?? 0,
-                      icon: ClipboardList,
-                      color: "primary",
-                    },
-                    {
-                      label: "Pending",
-                      value:
-                        orders?.filter((o) => o.status === "Pending").length ??
-                        0,
-                      icon: Clock,
-                      color: "orange",
-                    },
-                    {
-                      label: "In Progress",
-                      value:
-                        orders?.filter((o) => o.status === "InProgress")
-                          .length ?? 0,
-                      icon: TrendingUp,
-                      color: "blue",
-                    },
-                    {
-                      label: "Completed",
-                      value:
-                        orders?.filter((o) => o.status === "Completed")
-                          .length ?? 0,
-                      icon: CheckCircle2,
-                      color: "green",
-                    },
-                  ].map(({ label, value, icon: Icon, color }) => (
-                    <Card
-                      key={label}
-                      className="card-glow bg-card border-border"
-                    >
-                      <CardContent className="pt-5 pb-5">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Icon
-                            className={`w-4 h-4 ${color === "orange" ? "text-orange-400" : color === "blue" ? "text-blue-400" : color === "green" ? "text-green-400" : "text-primary"}`}
-                          />
-                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                            {label}
-                          </p>
-                        </div>
-                        <p className="text-3xl font-black text-foreground">
-                          {value}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-                <Card className="card-glow bg-card border-border">
-                  <CardHeader>
-                    <CardTitle className="font-display text-xl">
-                      Revenue Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
-                        <p className="text-xs font-bold text-green-400 uppercase mb-1">
-                          Total Revenue (Approved)
-                        </p>
-                        <p className="text-2xl font-black text-green-300">
-                          ₹
-                          {backendPaymentStatuses
-                            .filter((s) => s.status === "Approved")
-                            .reduce((sum, s) => sum + Number(s.price), 0)
-                            .toLocaleString("en-IN")}
-                        </p>
-                      </div>
-                      <div className="p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
-                        <p className="text-xs font-bold text-orange-400 uppercase mb-1">
-                          Processing
-                        </p>
-                        <p className="text-2xl font-black text-orange-300">
-                          ₹
-                          {backendPaymentStatuses
-                            .filter((s) => s.status === "Processing")
-                            .reduce((sum, s) => sum + Number(s.price), 0)
-                            .toLocaleString("en-IN")}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="cancelled">
-              <Card
-                className="card-glow bg-card border-border"
-                data-ocid="admin.cancelled_payments.section"
-              >
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="font-display text-2xl flex items-center gap-2">
-                      ❌ Cancelled Payments
-                      {backendPaymentStatuses.filter(
-                        (s) => s.status === "Cancelled",
-                      ).length > 0 && (
-                        <span className="bg-destructive text-destructive-foreground text-sm rounded-full px-2 py-0.5">
-                          {
-                            backendPaymentStatuses.filter(
-                              (s) => s.status === "Cancelled",
-                            ).length
-                          }
-                        </span>
-                      )}
-                    </CardTitle>
-                    <p className="text-muted-foreground font-bold text-sm mt-1">
-                      Customers who cancelled before completing payment
-                    </p>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {backendPaymentStatuses.filter(
-                    (s) => s.status === "Cancelled",
-                  ).length === 0 ? (
-                    <div
-                      className="p-8 text-center text-muted-foreground font-bold"
-                      data-ocid="admin.cancelled_payments.empty_state"
-                    >
-                      No cancelled payments yet
-                    </div>
-                  ) : (
-                    <Table data-ocid="admin.cancelled_payments.table">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="font-bold">
-                            Customer ID
-                          </TableHead>
-                          <TableHead className="font-bold">
-                            Customer Name
-                          </TableHead>
-                          <TableHead className="font-bold">Amount</TableHead>
-                          <TableHead className="font-bold">Time</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {backendPaymentStatuses
-                          .filter((s) => s.status === "Cancelled")
-                          .map((ps, idx) => (
-                            <TableRow
-                              key={ps.orderId.toString()}
-                              className="border-destructive/20 bg-destructive/5 hover:bg-destructive/10"
-                              data-ocid={`admin.cancelled_payments.row.${idx + 1}`}
-                            >
-                              <TableCell className="font-bold text-destructive">
-                                {ps.customerId || "—"}
-                              </TableCell>
-                              <TableCell className="font-bold">
-                                {ps.contactName}
-                              </TableCell>
-                              <TableCell className="font-bold text-destructive">
-                                ₹{Number(ps.price).toLocaleString("en-IN")}
-                              </TableCell>
-                              <TableCell className="font-bold text-muted-foreground text-xs">
-                                {ps.updatedAt
-                                  ? new Date(
-                                      Number(ps.updatedAt) / 1_000_000,
-                                    ).toLocaleString("en-IN")
-                                  : "—"}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </div>
       </div>
 

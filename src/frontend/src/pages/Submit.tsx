@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
+  Camera,
   CheckCircle2,
   Clock,
   Copy,
@@ -213,7 +214,12 @@ export default function Submit() {
       (actor as any).cancelPayment(orderId).catch(() => {});
     }
   }, [orderId, contactName, customerId, selectedPlanId, actor]);
-  const [_paymentApproved, setPaymentApproved] = useState(false);
+  const [paymentApproved, setPaymentApproved] = useState(false);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(
+    null,
+  );
+  const [screenshotSubmitted, setScreenshotSubmitted] = useState(false);
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -1015,7 +1021,87 @@ export default function Submit() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -30 }}
               transition={{ duration: 0.3 }}
+              className="space-y-4"
             >
+              {/* Screenshot Upload Card */}
+              <Card className="card-glow bg-card border-border border-green-500/30">
+                <CardHeader>
+                  <CardTitle className="font-display text-xl flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-green-400" />
+                    Upload Payment Screenshot
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {screenshotSubmitted ? (
+                    <div
+                      className="rounded-xl bg-green-500/15 border-2 border-green-500/50 p-5 text-center space-y-2"
+                      data-ocid="submit.screenshot.success_state"
+                    >
+                      <div className="text-3xl">✅</div>
+                      <p className="font-bold text-green-300 text-lg">
+                        Screenshot submitted!
+                      </p>
+                      <p className="text-sm font-semibold text-green-400">
+                        Waiting for admin verification...
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <label
+                        className="flex flex-col items-center justify-center gap-3 w-full h-32 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
+                        htmlFor="screenshot-upload"
+                      >
+                        {screenshotPreview ? (
+                          <img
+                            src={screenshotPreview}
+                            alt="Screenshot preview"
+                            className="h-28 w-full object-contain rounded-lg"
+                          />
+                        ) : (
+                          <>
+                            <Camera className="w-8 h-8 text-primary/60" />
+                            <span className="text-sm font-bold text-muted-foreground">
+                              Tap to select payment screenshot
+                            </span>
+                          </>
+                        )}
+                      </label>
+                      <input
+                        id="screenshot-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        data-ocid="submit.screenshot.upload_button"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] ?? null;
+                          setScreenshotFile(file);
+                          if (file) {
+                            const url = URL.createObjectURL(file);
+                            setScreenshotPreview(url);
+                          } else {
+                            setScreenshotPreview(null);
+                          }
+                        }}
+                      />
+                      <Button
+                        className="w-full bg-green-600 hover:bg-green-500 text-white font-bold"
+                        disabled={!screenshotFile}
+                        data-ocid="submit.screenshot.submit_button"
+                        onClick={() => {
+                          if (!screenshotFile) return;
+                          setScreenshotSubmitted(true);
+                          toast.success(
+                            "Screenshot submitted! Admin will verify shortly.",
+                          );
+                        }}
+                      >
+                        Submit Screenshot
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               <Card className="card-glow bg-card border-border">
                 <CardHeader>
                   <CardTitle className="font-display text-xl flex items-center gap-2">
@@ -1041,12 +1127,37 @@ export default function Submit() {
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
-                    <span className="text-xs font-bold text-green-400">
-                      Waiting for admin verification...
-                    </span>
-                  </div>
+                  {paymentApproved ? (
+                    <div
+                      className="rounded-xl bg-green-500/15 border-2 border-green-500/50 p-5 text-center space-y-2"
+                      data-ocid="submit.payment.success_state"
+                    >
+                      <div className="text-3xl">✅</div>
+                      <p className="text-lg font-black text-green-300">
+                        Payment Successful!
+                      </p>
+                      <p className="text-sm font-bold text-green-400">
+                        Your order is confirmed. Redirecting...
+                      </p>
+                      {customerId && (
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/20 border border-green-500/40 mt-2">
+                          <span className="text-xs font-bold text-green-400">
+                            ID:
+                          </span>
+                          <span className="text-sm font-black text-green-200">
+                            {customerId}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
+                      <span className="text-xs font-bold text-green-400">
+                        Waiting for admin verification...
+                      </span>
+                    </div>
+                  )}
 
                   {customerId && (
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/15 border border-violet-500/30">
@@ -1126,7 +1237,7 @@ export default function Submit() {
 
                   <div className="space-y-2">
                     <h2 className="font-display font-bold text-3xl text-green-400">
-                      Payment Approved! ✅
+                      ✅ Payment Successful!
                     </h2>
                     <p className="text-muted-foreground font-bold">
                       Your order has been confirmed. We will start editing your
