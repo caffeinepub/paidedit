@@ -219,11 +219,13 @@ export default function Admin() {
   const [_approvedPayments, setApprovedPayments] = useState<Set<string>>(
     new Set(),
   );
-  const [approvingPayment, setApprovingPayment] = useState<string | null>(null);
-  const [backendPaymentStatuses, setBackendPaymentStatuses] = useState<
+  const [_approvingPayment, _setApprovingPayment] = useState<string | null>(
+    null,
+  );
+  const [_backendPaymentStatuses, setBackendPaymentStatuses] = useState<
     import("../backend.d").PaymentStatusInfo[]
   >([]);
-  const [paymentStatusesLoading, setPaymentStatusesLoading] = useState(false);
+  const [_paymentStatusesLoading, setPaymentStatusesLoading] = useState(false);
   const [notifPermission, setNotifPermission] =
     useState<NotificationPermission>(() =>
       "Notification" in window ? Notification.permission : "denied",
@@ -1098,308 +1100,199 @@ export default function Admin() {
           </motion.div>
 
           <div className="w-full">
-            {/* ===== PAYMENTS TAB ===== */}
-            <div>
-              <div className="space-y-6">
-                {/* Backend Payment Statuses - Live from IC */}
-                <Card
-                  className="card-glow bg-card border-border"
-                  data-ocid="admin.payments.receiving.panel"
-                >
-                  <CardHeader className="pb-3">
-                    <CardTitle className="font-display text-xl flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-orange-400 animate-pulse" />
-                      Live Payment Tracker
-                      {backendPaymentStatuses.length > 0 && (
-                        <span className="ml-2 text-xs font-bold px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
-                          {backendPaymentStatuses.length} entries
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={refreshPaymentStatuses}
-                        className="ml-auto text-xs text-muted-foreground hover:text-foreground font-bold flex items-center gap-1"
-                        data-ocid="admin.payments.button"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" /> Refresh
-                      </button>
-                    </CardTitle>
-                    {!isIcLoggedIn && (
-                      <div className="flex items-center gap-2 text-orange-400 text-xs bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 font-bold mt-2">
-                        <Shield className="w-3.5 h-3.5 shrink-0" />
-                        Connect IC Identity (Step 2 above) to view payment
-                        statuses.
-                      </div>
+            {/* ===== ORDERS TABLE ===== */}
+            <div className="space-y-6">
+              <Card
+                className="card-glow bg-card border-border"
+                data-ocid="admin.orders.panel"
+              >
+                <CardHeader className="pb-3">
+                  <CardTitle className="font-display text-xl flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5 text-primary" />
+                    All Orders
+                    {_ordersLoading && (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground ml-1" />
                     )}
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {/* Stats row */}
-                    {backendPaymentStatuses.length > 0 && (
-                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 px-4 pb-4">
-                        {[
-                          {
-                            label: "Processing",
-                            color: "yellow",
-                            count: backendPaymentStatuses.filter(
-                              (s) => s.status === "Processing",
-                            ).length,
-                          },
-                          {
-                            label: "Approved",
-                            color: "green",
-                            count: backendPaymentStatuses.filter(
-                              (s) => s.status === "Approved",
-                            ).length,
-                          },
-                          {
-                            label: "Cancelled",
-                            color: "red",
-                            count: backendPaymentStatuses.filter(
-                              (s) => s.status === "Cancelled",
-                            ).length,
-                          },
-                          {
-                            label: "Rejected",
-                            color: "rose",
-                            count: backendPaymentStatuses.filter(
-                              (s) => s.status === "Rejected",
-                            ).length,
-                          },
-                          {
-                            label: "Pending",
-                            color: "gray",
-                            count: backendPaymentStatuses.filter(
-                              (s) => s.status === "Pending",
-                            ).length,
-                          },
-                        ].map(({ label, color, count }) => (
-                          <div
-                            key={label}
-                            className={`rounded-xl p-3 bg-${color === "yellow" ? "yellow" : color === "green" ? "green" : color === "red" ? "red" : color === "rose" ? "rose" : "muted"}-500/10 border border-${color === "yellow" ? "yellow" : color === "green" ? "green" : color === "red" ? "red" : color === "rose" ? "rose" : "border"}-500/20`}
-                          >
-                            <p
-                              className={`text-xl font-black ${color === "yellow" ? "text-yellow-300" : color === "green" ? "text-green-300" : color === "red" ? "text-red-300" : color === "rose" ? "text-rose-300" : "text-muted-foreground"}`}
-                            >
-                              {count}
-                            </p>
-                            <p className="text-xs font-bold text-muted-foreground">
-                              {label}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {paymentStatusesLoading &&
-                    backendPaymentStatuses.length === 0 ? (
-                      <div
-                        className="p-4 space-y-3"
-                        data-ocid="admin.payments.receiving.loading_state"
-                      >
-                        {[1, 2, 3].map((i) => (
-                          <Skeleton key={i} className="h-12 w-full" />
-                        ))}
-                      </div>
-                    ) : backendPaymentStatuses.length === 0 ? (
-                      <div
-                        className="p-10 text-center"
-                        data-ocid="admin.payments.receiving.empty_state"
-                      >
-                        <p className="text-3xl mb-2">💰</p>
-                        <p className="text-muted-foreground font-bold text-sm">
-                          {isIcLoggedIn
-                            ? "No payment activity yet. Customer payments will appear here in real-time."
-                            : "Connect IC Identity to view payments."}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="border-border hover:bg-transparent">
-                              <TableHead className="text-muted-foreground text-xs font-bold">
-                                Customer ID
-                              </TableHead>
-                              <TableHead className="text-muted-foreground text-xs font-bold">
-                                Name
-                              </TableHead>
-                              <TableHead className="text-muted-foreground text-xs font-bold">
-                                Amount
-                              </TableHead>
-                              <TableHead className="text-muted-foreground text-xs font-bold">
-                                Status
-                              </TableHead>
-                              <TableHead className="text-muted-foreground text-xs font-bold hidden sm:table-cell">
-                                Time
-                              </TableHead>
-                              <TableHead className="text-muted-foreground text-xs font-bold">
-                                Action
-                              </TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {[...backendPaymentStatuses]
-                              .sort(
-                                (a, b) =>
-                                  Number(b.updatedAt) - Number(a.updatedAt),
-                              )
-                              .map((ps, idx) => {
-                                const idStr = ps.orderId.toString();
-                                const isProcessing = ps.status === "Processing";
-                                const isApproved = ps.status === "Approved";
-                                const isCancelled = ps.status === "Cancelled";
-                                const isRejected = ps.status === "Rejected";
-                                return (
-                                  <TableRow
-                                    key={idStr}
-                                    className={`border-border ${isProcessing ? "hover:bg-orange-500/5 bg-orange-500/3" : isApproved ? "hover:bg-green-500/5" : isCancelled ? "hover:bg-red-500/5 bg-red-500/3" : isRejected ? "hover:bg-rose-500/5 bg-rose-500/3" : "hover:bg-muted/20"}`}
-                                    data-ocid={`admin.payments.receiving.row.${idx + 1}`}
-                                  >
-                                    <TableCell>
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-black bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                                        {ps.customerId || "PAID-????"}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell className="text-sm font-bold">
-                                      {ps.contactName}
-                                    </TableCell>
-                                    <TableCell className="text-sm font-black text-green-400">
-                                      ₹
-                                      {Number(ps.price).toLocaleString("en-IN")}
-                                    </TableCell>
-                                    <TableCell>
-                                      {isApproved ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-green-500/15 text-green-400 border border-green-500/30">
-                                          <CheckCircle2 className="w-3 h-3" />{" "}
-                                          ✅ Payment Successful
-                                        </span>
-                                      ) : isCancelled ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-red-500/15 text-red-400 border border-red-500/30">
-                                          <XCircle className="w-3 h-3" />{" "}
-                                          Cancelled
-                                        </span>
-                                      ) : isProcessing ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 animate-pulse">
-                                          <Clock className="w-3 h-3" />{" "}
-                                          Processing
-                                        </span>
-                                      ) : isRejected ? (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
-                                          <XCircle className="w-3 h-3" />{" "}
-                                          Rejected
-                                        </span>
-                                      ) : (
-                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-muted/50 text-muted-foreground border border-border">
-                                          Pending
-                                        </span>
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="text-xs text-muted-foreground hidden sm:table-cell">
-                                      {ps.updatedAt
-                                        ? new Date(
-                                            Number(ps.updatedAt) / 1_000_000,
-                                          ).toLocaleString("en-IN")
-                                        : "—"}
-                                    </TableCell>
-                                    <TableCell>
-                                      {!isApproved &&
-                                      !isCancelled &&
-                                      !isRejected ? (
-                                        <div className="flex gap-1.5 flex-wrap">
-                                          <button
-                                            type="button"
-                                            disabled={
-                                              approvingPayment === idStr
-                                            }
-                                            onClick={async () => {
-                                              if (!actor || !isIcLoggedIn) {
-                                                toast.error(
-                                                  "Connect IC Identity first to approve payments.",
-                                                );
-                                                return;
-                                              }
-                                              setApprovingPayment(idStr);
-                                              try {
-                                                await (
-                                                  actor as unknown as FullBackend
-                                                ).approvePayment(ps.orderId);
-                                                toast.success(
-                                                  `Payment approved for ${ps.contactName}!`,
-                                                );
-                                                await refreshPaymentStatuses();
-                                              } catch {
-                                                toast.error(
-                                                  "Failed to approve payment. Try again.",
-                                                );
-                                              } finally {
-                                                setApprovingPayment(null);
-                                              }
-                                            }}
-                                            data-ocid={`admin.payments.approve_button.${idx + 1}`}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer bg-green-500/20 text-green-300 border border-green-500/40 hover:bg-green-500/30 transition-all disabled:opacity-60"
-                                          >
-                                            {approvingPayment === idStr ? (
-                                              <Loader2 className="w-3 h-3 animate-spin" />
-                                            ) : null}
-                                            Mark Successful ✅
-                                          </button>
-                                          <button
-                                            type="button"
-                                            disabled={
-                                              approvingPayment ===
-                                              `${idStr}_reject`
-                                            }
-                                            onClick={async () => {
-                                              if (!actor || !isIcLoggedIn) {
-                                                toast.error(
-                                                  "Connect IC Identity first.",
-                                                );
-                                                return;
-                                              }
-                                              setApprovingPayment(
-                                                `${idStr}_reject`,
-                                              );
-                                              try {
-                                                await (
-                                                  actor as unknown as FullBackend
-                                                ).rejectPayment(ps.orderId);
-                                                toast.error(
-                                                  `Payment rejected for ${ps.contactName}`,
-                                                );
-                                                await refreshPaymentStatuses();
-                                              } catch {
-                                                toast.error(
-                                                  "Failed to reject payment. Try again.",
-                                                );
-                                              } finally {
-                                                setApprovingPayment(null);
-                                              }
-                                            }}
-                                            data-ocid={`admin.payments.reject_button.${idx + 1}`}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black cursor-pointer bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 transition-all disabled:opacity-60"
-                                          >
-                                            {approvingPayment ===
-                                            `${idStr}_reject` ? (
-                                              <Loader2 className="w-3 h-3 animate-spin" />
-                                            ) : null}
-                                            Reject ❌
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <span className="text-xs text-muted-foreground font-bold">
-                                          —
-                                        </span>
-                                      )}
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                    <span className="ml-auto text-sm font-bold text-muted-foreground">
+                      {orders?.length ?? 0} total
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {_ordersError ? (
+                    <div
+                      className="p-6 text-center text-destructive font-bold"
+                      data-ocid="admin.orders.error_state"
+                    >
+                      Failed to load orders. Please reconnect IC Identity.
+                    </div>
+                  ) : !orders || orders.length === 0 ? (
+                    <div
+                      className="p-10 text-center text-muted-foreground font-bold"
+                      data-ocid="admin.orders.empty_state"
+                    >
+                      No orders yet.
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table data-ocid="admin.orders.table">
+                        <TableHeader>
+                          <TableRow className="border-border hover:bg-transparent">
+                            <TableHead className="font-bold text-muted-foreground">
+                              #
+                            </TableHead>
+                            <TableHead className="font-bold text-muted-foreground">
+                              Customer
+                            </TableHead>
+                            <TableHead className="font-bold text-muted-foreground">
+                              Phone
+                            </TableHead>
+                            <TableHead className="font-bold text-muted-foreground">
+                              Plan
+                            </TableHead>
+                            <TableHead className="font-bold text-muted-foreground">
+                              Status
+                            </TableHead>
+                            <TableHead className="font-bold text-muted-foreground">
+                              Date
+                            </TableHead>
+                            <TableHead className="font-bold text-muted-foreground text-right">
+                              Actions
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {[...orders].reverse().map((order, idx) => {
+                            const desc = order.description ?? "";
+                            let plan = "Custom";
+                            if (desc.includes("₹999")) plan = "FF ₹999";
+                            else if (desc.includes("₹499")) plan = "FF ₹499";
+                            else if (desc.includes("₹149"))
+                              plan = "Premium ₹149";
+                            else if (desc.includes("₹99")) plan = "HQ ₹99";
+                            else if (desc.includes("₹50")) plan = "FF ₹50";
+                            const createdDate = order.createdAt
+                              ? new Date(
+                                  Number(order.createdAt) / 1_000_000,
+                                ).toLocaleDateString("en-IN", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "2-digit",
+                                })
+                              : "—";
+                            const status =
+                              (order.status as string) ?? "Pending";
+                            return (
+                              <TableRow
+                                key={order.id.toString()}
+                                className="border-border hover:bg-muted/10"
+                                data-ocid={`admin.orders.row.${idx + 1}`}
+                              >
+                                <TableCell className="font-bold text-muted-foreground text-xs">
+                                  {orders.length - idx}
+                                </TableCell>
+                                <TableCell>
+                                  <p className="font-bold text-foreground text-sm">
+                                    {order.contactName || "—"}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground font-bold">
+                                    {order.contactEmail || ""}
+                                  </p>
+                                </TableCell>
+                                <TableCell className="font-bold text-sm">
+                                  {order.contactPhone || "—"}
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                    {plan}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <StatusBadge status={status as Status} />
+                                </TableCell>
+                                <TableCell className="text-xs font-bold text-muted-foreground">
+                                  {createdDate}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-border text-xs font-bold h-7 px-2"
+                                      onClick={() =>
+                                        setSendDialogOrder({
+                                          id: order.id,
+                                          name: order.contactName,
+                                          email: order.contactEmail ?? "",
+                                        })
+                                      }
+                                      data-ocid={`admin.orders.edit_button.${idx + 1}`}
+                                    >
+                                      <Send className="w-3 h-3 mr-1" /> Send
+                                      Video
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-green-500/40 text-green-400 text-xs font-bold h-7 px-2 hover:bg-green-500/10"
+                                      onClick={async () => {
+                                        try {
+                                          await updateStatus.mutateAsync({
+                                            orderId: order.id,
+                                            status: "Completed" as Status,
+                                          });
+                                          toast.success(
+                                            `Order marked complete for ${order.contactName}`,
+                                          );
+                                        } catch {
+                                          toast.error(
+                                            "Failed to update status",
+                                          );
+                                        }
+                                      }}
+                                      data-ocid={`admin.orders.confirm_button.${idx + 1}`}
+                                    >
+                                      <CheckCircle2 className="w-3 h-3 mr-1" />{" "}
+                                      Done
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-destructive/40 text-destructive text-xs font-bold h-7 px-2 hover:bg-destructive/10"
+                                      onClick={async () => {
+                                        try {
+                                          await updateStatus.mutateAsync({
+                                            orderId: order.id,
+                                            status: "Rejected" as Status,
+                                          });
+                                          toast.success(
+                                            `Order rejected for ${order.contactName}`,
+                                          );
+                                        } catch {
+                                          toast.error(
+                                            "Failed to update status",
+                                          );
+                                        }
+                                      }}
+                                      data-ocid={`admin.orders.delete_button.${idx + 1}`}
+                                    >
+                                      <XCircle className="w-3 h-3 mr-1" />{" "}
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
